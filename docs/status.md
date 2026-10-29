@@ -61,6 +61,5 @@ pnpm test
 pnpm build:link:csharp
 pnpm build:hap
 pnpm dev:ohos -- --device <serial>
-pnpm test:ble -- --device microbit
-pnpm test:ble -- --device wedo
+pnpm dev:ohos -- --ble-sim --device <serial>
 ```

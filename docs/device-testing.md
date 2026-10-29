@@ -76,35 +76,20 @@ The ArkTS BLE bridge then advertises two virtual peripherals:
 - `BBC micro:bit [tesslo]` — service `0000f005-...`, RX/TX characteristics.
 - `LEGO WeDo 2.0 [tesslo]` — `00001523-...` + `00004f0e-...` services.
 
-Run the protocol harness against it:
-
-```sh
-pnpm test:ble -- --device microbit --serial <serial>
-pnpm test:ble -- --device wedo --serial <serial>
-```
-
-Verified simulated result: both devices pass discover → connect → getServices →
-notify/read/write.
+In Tesslo, load the micro:bit or WeDo 2.0 extension and connect to the matching
+`[tesslo]` peripheral. Confirm discover → connect → getServices → notify/read/
+write in the editor. The simulated result has been verified for both devices.
 
 ### Real micro:bit / WeDo
 
-Use the same script without `--ble-sim`, with real hardware advertising:
+Launch without `--ble-sim`, make sure the device is advertising and not paired
+to another host, then load the extension in Tesslo and connect. Confirm:
 
-```sh
-pnpm test:ble -- --device microbit --serial <serial>
-pnpm test:ble -- --device wedo --serial <serial>
-```
+- micro:bit: display text, button/tilt notifications.
+- WeDo: ATTACHED_IO notifications, battery read, LED/motor command.
 
-The script forwards 20111, runs `discover → connect → getServices`, then:
-
-- micro:bit: subscribes to the notify characteristic and writes a
-  `displayText("Tesslo")` command.
-- WeDo: subscribes to `ATTACHED_IO`, reads `LOW_VOLTAGE_ALERT`, and sets the LED
-  green.
-
-Pass means the expected device is discovered, the service is present, and the
-write/subscribe requests return without a protocol error. With no device, the
-script fails with `no ... found`; that is expected.
+Pass means the device is discovered, the service is present, and writes and
+subscriptions return without a protocol error.
 
 ### File save/open
 

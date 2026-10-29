@@ -25,20 +25,17 @@ Runtime on device:
 - BLE scan is real; GATT connect/getServices/read/write/notifications are
   implemented over the ArkTS bridge.
 
-Simulated test (no hardware):
+Simulated devices (no hardware):
 
 ```bash
 pnpm dev:ohos -- --ble-sim --device <serial>
-pnpm test:ble -- --device microbit
-pnpm test:ble -- --device wedo
 ```
 
-Hardware test:
+Then load the micro:bit or WeDo extension in Tesslo and connect to the
+`BBC micro:bit [tesslo]` / `LEGO WeDo 2.0 [tesslo]` peripheral.
 
-```bash
-pnpm test:ble -- --device microbit
-pnpm test:ble -- --device wedo
-```
+Real hardware: launch without `--ble-sim`, load the extension, and connect the
+advertising device.
 
 Remaining: BT Classic, full state-machine parity, micro:bit/WeDo hardware
 regression.

@@ -21,12 +21,6 @@ pnpm dev:ohos -- --device <serial>
 pnpm dev:ohos -- --ble-sim --device <serial>  # 模拟 micro:bit/WeDo
 ```
 
-可选 BLE 设备测试：
-
-```bash
-pnpm test:ble -- --device microbit
-pnpm test:ble -- --device wedo
-```
 
 ## 目录
 
