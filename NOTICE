@@ -20,7 +20,7 @@ Upstream projects and copyright holders include:
 
   Electron-on-HarmonyOS runtime and reference HAP sample
   Copyright (c) Huawei Device Co., Ltd. and contributors
-  Runtime version and source asset: see vendor/electron-ohos.lock.json
+  Runtime version and source asset: see apps/tesslo/ohos/runtime.lock.json
 
   harmonypc-electron (Electron-on-HarmonyOS runtime reference)
   https://atomgit.com/jianguoxu/harmonypc-electron

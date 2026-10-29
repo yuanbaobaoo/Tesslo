@@ -1,39 +1,23 @@
 # Media Library
 
-Tesslo needs an offline copy of Scratch's default media library (sprites,
-costumes, backdrops, sounds). The upstream script
-`scratch-desktop/scripts/fetchMediaLibraryAssets.js` downloads assets from
-`cdn.assets.scratch.mit.edu`, which is not reliably reachable from mainland
-China.
+素材库（角色、造型、背景、声音）的本地缓存，供离线构建使用。
 
-## Policy
+## 来源
 
-- Do not commit fetched assets to git.
-- Build from a mirror or a pre-populated cache.
-- Record the source and checksum of the mirror in `media/manifest.json`.
-- Verify asset licenses before redistribution.
+`media/manifest.json` 记录来源、文件数与总字节数；素材本身不提交到 git。
 
-## Layout
+## 目录
 
 ```text
 media/
-├── manifest.json     # source, file count, byte count
-└── fetched/          # local offline assets (gitignored)
+├── manifest.json     # 来源与统计
+└── fetched/          # 离线素材（gitignored）
 ```
 
-## Status
+`pnpm build:hap` 把 `media/fetched` 复制到 HAP 应用负载的 `static/fetched`，
+`ElectronStorageHelper` 在运行时从该目录加载素材。
 
-- `media/fetched` currently holds 1328 files (~57 MB); `media/manifest.json`
-  records the count and total bytes.
-- `pnpm build:hap` stages `media/fetched` into the HAP app payload as
-  `static/fetched`.
-- `apps/desktop/static/fetched` is a local symlink to `media/fetched` for
-  desktop development.
-- Assets stay out of git; copy or fetch them into `media/fetched` before an
-  offline build.
+## 许可
 
-## Licensing
-
-The fetched assets are © Scratch Foundation. Their redistribution terms are
-separate from the AGPL code license. Clear redistribution before publishing a
-HAP that bundles them; for private builds keep the source host recorded.
+素材版权归 Scratch Foundation，其再分发条件独立于代码许可。公开发布包含这些
+素材的 HAP 前需要确认授权。

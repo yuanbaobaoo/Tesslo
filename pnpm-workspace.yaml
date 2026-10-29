@@ -16,7 +16,6 @@ overrides:
 allowBuilds:
   canvas: false
   core-js: false
-  electron: true
   electron-winstaller: false
   esbuild: true
   fsevents: false

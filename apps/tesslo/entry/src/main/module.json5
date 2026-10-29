@@ -1,0 +1,184 @@
+{
+  "module": {
+    "name": "entry",
+    "type": "entry",
+    "srcEntry": "./ets/Application/AbilityStage.ets",
+    "description": "$string:module_desc",
+    "mainElement": "EntryAbility",
+    "deviceTypes": [
+      "2in1",
+      "tablet"
+    ],
+    /*"executableBinaryPaths": [
+      {
+        "path": "libs/arm64-v8a/electron"
+      }
+    ],*/
+    "deliveryWithInstall": true,
+    "installationFree": false,
+    "pages": "$profile:main_pages",
+    "metadata": [
+      {
+        "name": "electron_exec_path_ohos",
+        "value": "/data/storage/el1/bundle/libs/arm64/electron"
+      }
+    ],
+    "requestPermissions": [
+      { "name": "ohos.permission.INTERNET" },
+      { "name": "ohos.permission.GET_NETWORK_INFO" },
+      {
+        "name": "ohos.permission.ACCESS_BLUETOOTH",
+        "reason": "$string:access_bluetooth",
+        "usedScene": { "abilities": ["EntryAbility"], "when": "inuse" }
+      },
+      {
+        "name": "ohos.permission.CAMERA",
+        "reason": "$string:camera_reason",
+        "usedScene": { "abilities": ["EntryAbility"], "when": "inuse" }
+      },
+      {
+        "name": "ohos.permission.MICROPHONE",
+        "reason": "$string:microphone_reason",
+        "usedScene": { "abilities": ["EntryAbility"], "when": "inuse" }
+      },
+      {
+        "name": "ohos.permission.READ_PASTEBOARD",
+        "reason": "$string:read_pasteboard",
+        "usedScene": { "abilities": ["EntryAbility"], "when": "always" }
+      },
+      {
+        "name": "ohos.permission.READ_WRITE_USER_FILE",
+        "reason": "$string:read_write_user_file",
+        "usedScene": { "abilities": ["EntryAbility"], "when": "always" }
+      },
+      {
+        "name": "ohos.permission.READ_WRITE_DOCUMENTS_DIRECTORY",
+        "reason": "$string:documents_dir",
+        "usedScene": { "abilities": ["EntryAbility"], "when": "always" }
+      },
+      {
+        "name": "ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY",
+        "reason": "$string:download_dir",
+        "usedScene": { "abilities": ["EntryAbility"], "when": "always" }
+      },
+      { "name": "ohos.permission.FILE_ACCESS_PERSIST" },
+      { "name": "ohos.permission.kernel.ALLOW_WRITABLE_CODE_MEMORY" }
+    ],
+
+    "abilities": [
+      {
+        "name": "EntryAbility",
+        "srcEntry": "./ets/entryability/EntryAbility.ets",
+        "description": "$string:EntryAbility_desc",
+        "icon": "$media:app_icon",
+        "label": "$string:EntryAbility_label",
+        "startWindowIcon": "$media:app_icon",
+        "startWindowBackground": "$color:start_window_background",
+        "launchType": "specified",
+        "removeMissionAfterTerminate": true,
+        "continuable": true,
+        "exported": true,
+        "skills": [
+          {
+            "entities": [
+              "entity.system.home",
+              "entity.system.browsable"
+            ],
+            "actions": [
+              "action.system.home",
+              "ohos.want.action.viewData"
+            ],
+            "uris": [
+              {
+                "type": "application/pdf",
+                "scheme": 'file',
+                "linkFeature": "FileOpen"
+              },
+              {
+                "type": "text/html",
+                "scheme": 'file',
+                "linkFeature": "FileOpen"
+              },
+              {
+                "type": "application/x-mimearchive",
+                "scheme": 'file',
+                "linkFeature": "FileOpen"
+              },
+              {
+                "scheme": "http"
+              },
+              {
+                "scheme": "https"
+              },
+              {
+                "scheme": "electron"
+              }
+            ]
+          },
+          {
+            "actions": [
+              "ohos.want.action.viewData"
+            ],
+            "uris": [
+              {
+                "scheme": "link"
+              }
+            ]
+          }
+        ],
+        "metadata": [
+          {
+            "name": "ohos.ability.shortcuts",
+            "resource": "$profile:shortcuts_config"
+          },
+        ],
+      },
+      {
+        "name": "BrowserAbility",
+        "srcEntry": "./ets/entryability/BrowserAbility.ets",
+        "description": "$string:BrowserAbility_desc",
+        "startWindowIcon": "$media:app_icon",
+        "startWindowBackground": "$color:start_window_background",
+        "removeMissionAfterTerminate": true,
+        "exported": true,
+      },
+      {
+        "name": "StatelessAbility",
+        "srcEntry": "./ets/entryability/StatelessAbility.ets",
+        "description": "$string:StatelessAbility_desc",
+        "label": "$string:StatelessAbility_label",
+        "startWindowIcon": "$media:app_icon",
+        "startWindowBackground": "$color:start_window_background",
+        "launchType": "specified",
+        "removeMissionAfterTerminate": true,
+        "exported": true,
+      },
+      {
+        "name": "TaskManagerAbility",
+        "srcEntry": "./ets/entryability/TaskManagerAbility.ets",
+        "description": "$string:TaskManagerAbility_desc",
+        "label": "$string:TaskManagerAbility_label",
+        "startWindowIcon": "$media:app_icon",
+        "startWindowBackground": "$color:start_window_background",
+        "launchType": "specified",
+        "removeMissionAfterTerminate": true,
+        "exported": true,
+      },
+      {
+        "name": "HideKeeperAbility",
+        "srcEntry": "./ets/entryability/HideKeeperAbility.ets",
+        "startWindowIcon": "$media:app_icon",
+        "startWindowBackground": "$color:start_window_background",
+        "launchType": "singleton",
+        "excludeFromMissions": true,
+        "removeMissionAfterTerminate": true,
+        "exported": false,
+      }
+    ],
+    "definePermissions": [
+      {
+        "name": "ohos.permission.kernel.ALLOW_WRITABLE_CODE_MEMORY"
+      }
+    ]
+  }
+}

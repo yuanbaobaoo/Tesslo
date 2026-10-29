@@ -1,104 +1,108 @@
-# Device testing (HarmonyOS 7)
+# 真机验证
 
-## Prepare
+## 准备
 
-- HarmonyOS 7 device with developer mode and USB debugging enabled.
-- `hdc list targets` shows the device serial.
-- HarmonyOS SDK 26 command line tools and JDK 21 available. `scripts/ohos-common.mjs`
-  auto-detects `OHOS_COMMAND_LINE_TOOLS_ROOT`, `~/command-line-tools`, or
-  `hvigorw` on PATH.
-- .NET SDK 9.0.104 at `~/.dotnet` (or `DOTNET_ROOT`) for the C# link.
-
-Signing is device/account bound. If `apps/ohos/build-profile.json5` was generated
-for an emulator, remove it and let `dev:ohos` regenerate:
-
-```sh
-rm -f apps/ohos/build-profile.json5
-pnpm dev:ohos -- --device <serial>
-```
-
-`build-profile.json5` and files under `~/.ohos/config` are local; do not commit them.
-
-## Build and install
+- HarmonyOS 7 设备，开启开发者模式与 USB 调试。
+- `hdc list targets` 能看到设备序列号。
+- 命令行工具 26、JDK 21、.NET 9.0.104 就绪。
+- 已构建编辑器、C# Link，并准备好 Electron OHOS 运行库。
 
 ```sh
 pnpm build
 pnpm build:link:csharp
-pnpm build:hap                         # unsigned HAP
-pnpm build:hap -- --signed             # signed HAP
-pnpm dev:ohos -- --device <serial>     # signed build + install + launch + evidence
+pnpm dev:ohos -- --device <serial>
 ```
 
-`dev:ohos` writes `build/verify/<serial>-tesslo-main.log` and
-`build/verify/<serial>-tesslo.jpeg`. Accept permission prompts on the device.
-
-## Pass criteria
-
-### Editor / WebGL
-
-`build/verify/<serial>-tesslo-main.log` must contain:
+`dev:ohos` 会签名、安装、启动，等待权限弹窗后收集日志与截图：
 
 ```text
-webgl probe {"webgl":true,"webgl2":true,...}
+build/verify/<serial>-tesslo-main.log
+build/verify/<serial>-tesslo.jpeg
 ```
 
-If false, capture the probe line, `hdc shell param get const.product.model`,
-`hdc shell param get const.ohos.apiversion`, and any
-`cppcrash-org.tesslo.app-*` log.
+首次启动需要在设备上允许蓝牙、相机、麦克风、文件等权限。
 
-### C# Scratch Link
+## 模拟外设
 
-The main log should contain:
-
-```text
-C# Scratch Link present at .../libtesslolink.so; skipping JS link
-```
-
-The link log is `/data/app/el2/100/base/org.tesslo.app/files/tesslo-link.log`.
-Host verification:
-
-```sh
-hdc -t <serial> fport tcp:20111 tcp:20111
-node -e 'const W=require("ws");const w=new W("ws://127.0.0.1:20111/scratch/ble");w.on("open",()=>w.send(JSON.stringify({jsonrpc:"2.0",id:1,method:"getVersion"})));w.on("message",m=>{console.log(m.toString());w.close()})'
-```
-
-### Simulated micro:bit / WeDo
-
-When no hardware is available, launch the HAP with the simulator (also enabled
-automatically on emulator images):
+模拟器镜像自动启用；真机通过启动参数启用：
 
 ```sh
 pnpm dev:ohos -- --ble-sim --device <serial>
 ```
 
-The ArkTS BLE bridge then advertises two virtual peripherals:
+在编辑器中加载 micro:bit 或 WeDo 2.0 扩展，连接名称带 `[tesslo]` 的设备：
 
-- `BBC micro:bit [tesslo]` — service `0000f005-...`, RX/TX characteristics.
-- `LEGO WeDo 2.0 [tesslo]` — `00001523-...` + `00004f0e-...` services.
+- **micro:bit**：discover → connect → getServices → 订阅 TX → 写 RX
+  （显示文字）→ 收到通知。
+- **WeDo 2.0**：discover → connect → getServices → 读电池 → 订阅 ATTACHED_IO
+  → 写 LED/电机命令。
 
-In Tesslo, load the micro:bit or WeDo 2.0 extension and connect to the matching
-`[tesslo]` peripheral. Confirm discover → connect → getServices → notify/read/
-write in the editor. The simulated result has been verified for both devices.
+模拟状态只存在于 ArkTS BLE 桥进程内。强制停止应用后重新开始，需要重新扫描。
 
-### Real micro:bit / WeDo
+## 直接检查 C# Link
 
-Launch without `--ble-sim`, make sure the device is advertising and not paired
-to another host, then load the extension in Tesslo and connect. Confirm:
+将设备端口映射到主机：
 
-- micro:bit: display text, button/tilt notifications.
-- WeDo: ATTACHED_IO notifications, battery read, LED/motor command.
+```sh
+hdc -t <serial> fport tcp:20111 tcp:20111
+```
 
-Pass means the device is discovered, the service is present, and writes and
-subscriptions return without a protocol error.
+用任意 WebSocket 客户端连接 `ws://127.0.0.1:20111/scratch/ble`：
 
-### File save/open
+```json
+{"jsonrpc":"2.0","id":1,"method":"getVersion"}
+```
 
-1. `文件 → 保存到电脑`; confirm the picker defaults to `Scratch作品.sb3`.
-2. Tap 保存 manually (the system picker rejects synthetic input).
-3. Reopen with `文件 → 从电脑中上传`.
+期望：
 
-## Emulator limits
+```json
+{"jsonrpc":"2.0","id":1,"result":{"protocol":"1.3"}}
+```
 
-- No WebGL: Electron and ArkWeb both report `webgl=false`; UI renders, stage does not.
-- No Bluetooth hardware: scanning reports `Bluetooth is off`/no devices.
-- System permission and file pickers reject synthetic taps; a human tap is required.
+`discover` 需要 filters，例如：
+
+```json
+{"jsonrpc":"2.0","id":2,"method":"discover","params":{"filters":[{"namePrefix":"BBC"}]}}
+```
+
+结果先返回 `result: null`，随后收到 `didDiscoverPeripheral` 通知。
+
+路径不是 `/scratch/ble` 或 `/scratch/bt` 时服务器返回 404，这是正常行为。
+
+## 真实外设
+
+不带 `--ble-sim` 启动，确认外设正在广播且未与其它主机保持连接，然后在编辑器中
+选择扩展并连接。通过标准：
+
+- 能扫描到设备；
+- 能建立 GATT 连接并枚举服务；
+- 读写与订阅返回成功，没有协议错误；
+- micro:bit 能显示文字并上报按键/倾斜；WeDo 能上报 ATTACHED_IO、读取电量并
+  控制 LED/电机。
+
+## 日志
+
+| 文件 | 内容 |
+| --- | --- |
+| `/data/app/el2/100/base/io.github.yuanbaobaoo.tesslo/files/tesslo-link.log` | C# Link 监听、客户端、扫描结果 |
+| `build/verify/<serial>-tesslo-main.log` | Electron 启动、渲染进程、WebGL 探测 |
+
+WebGL 检查行：
+
+```text
+webgl probe {"webgl":true,"webgl2":true,...}
+```
+
+若为 `false`，记录 `const.product.model`、`const.ohos.apiversion` 和崩溃日志。
+
+## 文件保存与打开
+
+1. `文件 → 保存到电脑`，确认默认文件名为 `Scratch作品.sb3`。
+2. 在系统文件选择器中手动点保存（系统弹窗不接受合成点击）。
+3. 再用 `文件 → 从电脑中上传` 重新打开。
+
+## 模拟器限制
+
+- 模拟器没有 WebGL，Electron 报告 `webgl=false`：界面可用，舞台不渲染。
+- 模拟器没有蓝牙硬件，只能使用 `--ble-sim`。
+- 系统权限与文件选择器需要真人点击。

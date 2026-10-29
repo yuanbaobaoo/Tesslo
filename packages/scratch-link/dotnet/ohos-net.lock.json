@@ -1,0 +1,20 @@
+{
+  "source": {
+    "repo": "https://gitcode.com/OpenHarmonyPCDeveloper/ohos_net-opensource",
+    "commit": "9114affc54e9d7d94246708b841ec7f037119ea6",
+    "date": "2026-10-16"
+  },
+  "dotnet": "9.0.104",
+  "openHarmonyApi": 26,
+  "runtimePack": {
+    "name": "OpenHarmony.NET.Runtime",
+    "version": "0.0.0-alpha.19",
+    "sha256": "4e8dfd6eafdd3c3058a89bfba1d6c03398e654f753730091ec3edc2f39a90154",
+    "path": "packages/scratch-link/dotnet/ohos-net/runtime/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler"
+  },
+  "toolchainPath": "packages/scratch-link/dotnet/ohos-net/toolchain/host-portable",
+  "localChanges": [
+    "OpenHarmonySdkResolver.csproj retargeted from net10.0 to net9.0 so a single .NET 9 SDK is enough."
+  ],
+  "license": "Self-authored toolchain/samples are MIT; runtime pack and NDK bindings upstreams carry no LICENSE file. Confirm redistribution terms before commercial use."
+}

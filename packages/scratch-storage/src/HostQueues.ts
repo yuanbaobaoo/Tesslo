@@ -1,4 +1,4 @@
-import {QueueManager, type QueueOptions} from '@scratch/task-herder';
+import {QueueManager, type QueueOptions} from './TaskQueue';
 
 /**
  * @summary A set of generous limits, for things like downloading assets from CDN.

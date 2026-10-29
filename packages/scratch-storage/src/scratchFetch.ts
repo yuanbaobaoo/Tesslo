@@ -1,4 +1,4 @@
-import {type QueueOptions} from '@scratch/task-herder';
+import {type QueueOptions} from './TaskQueue';
 import {hostQueueManager} from './HostQueues';
 
 export const Headers = globalThis.Headers;

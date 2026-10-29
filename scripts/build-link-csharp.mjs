@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 
-import {repoRoot} from './ohos-common.mjs';
+import {hapRoot, repoRoot} from './ohos-common.mjs';
 
 const dotnetRoot = process.env.DOTNET_ROOT || path.join(process.env.HOME ?? '', '.dotnet');
 const dotnet = path.join(dotnetRoot, 'dotnet');
@@ -50,8 +50,8 @@ const publish = project => {
     if (result.status !== 0) process.exit(result.status ?? 1);
 };
 
-const serverProject = path.join(repoRoot, 'packages/link/dotnet/Tesslo.Link.Server/Tesslo.Link.Server.csproj');
-const nativeProject = path.join(repoRoot, 'packages/link/dotnet/Tesslo.Link.Native/Tesslo.Link.Native.csproj');
+const serverProject = path.join(repoRoot, 'packages/scratch-link/dotnet/Tesslo.Link.Server/Tesslo.Link.Server.csproj');
+const nativeProject = path.join(repoRoot, 'packages/scratch-link/dotnet/Tesslo.Link.Native/Tesslo.Link.Native.csproj');
 publish(serverProject);
 publish(nativeProject);
 
@@ -59,8 +59,8 @@ const nativeRoot = fs.existsSync(path.join(sdkRoot, 'openharmony/native'))
     ? path.join(sdkRoot, 'openharmony/native')
     : path.join(sdkRoot, 'native');
 const clang = path.join(nativeRoot, 'llvm/bin/clang++');
-const shimSource = path.join(repoRoot, 'packages/link/dotnet/napi/tesslo_link_napi.cpp');
-const shimOutput = path.join(repoRoot, 'packages/link/dotnet/napi/libtesslolink.so');
+const shimSource = path.join(repoRoot, 'packages/scratch-link/dotnet/napi/tesslo_link_napi.cpp');
+const shimOutput = path.join(repoRoot, 'packages/scratch-link/dotnet/napi/libtesslolink.so');
 const shim = spawnSync(
     clang,
     [
@@ -81,11 +81,11 @@ const shim = spawnSync(
 );
 if (shim.status !== 0) process.exit(shim.status ?? 1);
 
-const deployDir = path.join(repoRoot, 'apps/ohos/electron/libs/arm64-v8a');
+const deployDir = path.join(hapRoot, 'entry/libs/arm64-v8a');
 fs.mkdirSync(deployDir, {recursive: true});
 const nativeOutput = path.join(
     repoRoot,
-    'packages/link/dotnet/Tesslo.Link.Native/bin/Release/net9.0/linux-musl-arm64/publish/TessloLinkNative.so'
+    'packages/scratch-link/dotnet/Tesslo.Link.Native/bin/Release/net9.0/linux-musl-arm64/publish/TessloLinkNative.so'
 );
 if (!fs.existsSync(nativeOutput)) {
     console.error(`[link:csharp] expected artifact not found: ${nativeOutput}`);

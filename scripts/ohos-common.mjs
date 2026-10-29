@@ -4,18 +4,17 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
 export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const hapRoot = process.env.TESSLO_HAP_ROOT
-    ? path.resolve(repoRoot, process.env.TESSLO_HAP_ROOT)
-    : path.join(repoRoot, 'apps/ohos');
+export const appRoot = path.join(repoRoot, 'apps/tesslo');
+export const hapRoot = appRoot;
 export const appPayload = path.join(
-    hapRoot,
+    appRoot,
     'web_engine/src/main/resources/resfile/resources/app'
 );
-export const desktopDist = path.join(repoRoot, 'apps/desktop/dist');
-export const desktopStatic = path.join(repoRoot, 'apps/desktop/static');
+export const desktopRoot = path.join(appRoot, 'desktop');
+export const desktopDist = path.join(desktopRoot, 'dist');
 export const mediaFetched = path.join(repoRoot, 'media/fetched');
-export const linkBundle = path.join(repoRoot, 'packages/link/dist/link.cjs');
-export const bundleName = 'org.tesslo.app';
+export const linkBundle = path.join(repoRoot, 'packages/scratch-link/dist/link.cjs');
+export const bundleName = 'io.github.yuanbaobaoo.tesslo';
 export const abilityName = 'EntryAbility';
 
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
@@ -132,14 +131,7 @@ export function stageAppPayload() {
     fs.mkdirSync(appPayload, {recursive: true});
     copyDir(path.join(desktopDist, 'main'), path.join(appPayload, 'main'));
     copyDir(path.join(desktopDist, 'renderer'), path.join(appPayload, 'renderer'));
-    if (fs.existsSync(desktopStatic)) {
-        fs.cpSync(desktopStatic, path.join(appPayload, 'static'), {
-            recursive: true,
-            filter: source => path.basename(source) !== 'fetched'
-        });
-    } else {
-        fs.mkdirSync(path.join(appPayload, 'static'), {recursive: true});
-    }
+    fs.mkdirSync(path.join(appPayload, 'static'), {recursive: true});
     if (fs.existsSync(mediaFetched)) {
         fs.cpSync(mediaFetched, path.join(appPayload, 'static/fetched'), {recursive: true});
     } else {
@@ -165,16 +157,16 @@ export function stageAppPayload() {
 }
 
 export function ensureRuntime() {
-    const lib = path.join(hapRoot, 'electron/libs/arm64-v8a/libelectron.so');
+    const lib = path.join(hapRoot, 'entry/libs/arm64-v8a/libelectron.so');
     const icu = path.join(hapRoot, 'web_engine/src/main/resources/resfile/icudtl.dat');
     if (!fs.existsSync(lib) || !fs.existsSync(icu)) {
         throw new Error(
             'Electron OHOS runtime is missing from the HAP template. ' +
-                'Populate vendor/cache from the asset pinned in vendor/electron-ohos.lock.json, ' +
-                'then copy libs/resfile into apps/ohos.'
+                'Populate apps/tesslo/entry/libs and resfile from the pinned runtime asset, ' +
+                'then run pnpm build:link:csharp.'
         );
     }
-    const csharpLink = path.join(hapRoot, 'electron/libs/arm64-v8a/libtesslolink.so');
+    const csharpLink = path.join(hapRoot, 'entry/libs/arm64-v8a/libtesslolink.so');
     if (!fs.existsSync(csharpLink)) {
         throw new Error('C# link NAPI bridge is missing; run pnpm build:link:csharp first.');
     }
@@ -196,12 +188,16 @@ export function ensureSigning() {
     const text = fs.readFileSync(profile, 'utf8');
     if (!text.includes('signingConfigs')) {
         console.log('[ohos] no signing config; generating debug signing material with devecocli');
-        run('devecocli', ['signature', 'generate', '--product', 'default'], {cwd: hapRoot});
+        const toolchain = resolveToolchain();
+        run('devecocli', ['signature', 'generate', '--product', 'default'], {
+            cwd: hapRoot,
+            env: {...toolchain.env, DEVECO_CLI_CLT_PATH: toolchain.root}
+        });
     }
 }
 
 export function findHap({signed = true} = {}) {
-    const outputDir = path.join(hapRoot, 'electron/build/default/outputs/default');
+    const outputDir = path.join(hapRoot, 'entry/build/default/outputs/default');
     if (!fs.existsSync(outputDir)) return null;
     const haps = fs
         .readdirSync(outputDir)
@@ -218,16 +214,34 @@ export function buildHap({build = false, signed = true} = {}) {
     ensureRuntime();
     stageAppPayload();
     ensureProfile();
-    if (signed) ensureSigning();
-    for (const dir of ['.hvigor', 'electron/build', 'web_engine/build', 'account_quick_login/build']) {
+    const profilePath = path.join(hapRoot, 'build-profile.json5');
+    const templatePath = path.join(hapRoot, 'build-profile.template.json5');
+    let backup = null;
+    if (!signed) {
+        if (fs.existsSync(profilePath)) {
+            backup = `${profilePath}.local`;
+            fs.renameSync(profilePath, backup);
+        }
+        fs.copyFileSync(templatePath, profilePath);
+    } else {
+        ensureSigning();
+    }
+    for (const dir of ['.hvigor', 'entry/build', 'web_engine/build']) {
         fs.rmSync(path.join(hapRoot, dir), {recursive: true, force: true});
     }
     console.log('[ohos] hvigor assembleHap');
-    run(
-        toolchain.hvigorw,
-        ['assembleHap', '--mode', 'module', '-p', 'product=default', '-p', 'buildMode=debug', '--no-daemon'],
-        {cwd: hapRoot, env: toolchain.env}
-    );
+    try {
+        run(
+            toolchain.hvigorw,
+            ['assembleHap', '--mode', 'module', '-p', 'product=default', '-p', 'buildMode=debug', '--no-daemon'],
+            {cwd: hapRoot, env: toolchain.env}
+        );
+    } finally {
+        if (backup) {
+            fs.rmSync(profilePath, {force: true});
+            fs.renameSync(backup, profilePath);
+        }
+    }
     const hap = findHap({signed});
     if (!hap) throw new Error('HAP was not produced');
     console.log(`[ohos] HAP: ${hap}`);

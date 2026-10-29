@@ -1,4 +1,3 @@
-upstream/
 node_modules/
 dist/
 build/
@@ -13,34 +12,24 @@ packages/*/playground/
 packages/*/locales/
 packages/*/types/
 packages/*/dist.js
-apps/*/dist/
-vendor/cache/
 *.hap
 *.app
 signing.*.local.json
 
-# Device-bound signing configs and generated HAP project file
-
 media/fetched/
-apps/desktop/static/fetched
+media/cache/
 
-# Local C#/NativeAOT build outputs
-vendor/ohos-net/runtime/runtime.linux-musl-*/
-vendor/ohos-net/samples/**/bin/
-vendor/ohos-net/samples/**/obj/
-packages/link/dotnet/**/bin/
-packages/link/dotnet/**/obj/
+apps/tesslo/entry/libs/
+apps/tesslo/entry/oh_modules/
+apps/tesslo/web_engine/oh_modules/
+apps/tesslo/oh_modules/
+apps/tesslo/**/build/
+apps/tesslo/.hvigor/
+apps/tesslo/build-profile.json5
+apps/tesslo/web_engine/src/main/resources/resfile/
 
-# apps/ohos generated runtime and build output
-apps/ohos/electron/libs/
-apps/ohos/electron/oh_modules/
-apps/ohos/web_engine/oh_modules/
-apps/ohos/oh_modules/
-apps/ohos/**/build/
-apps/ohos/.hvigor/
-apps/ohos/build-profile.json5
-apps/ohos/web_engine/src/main/resources/resfile/
-packages/link/dotnet/napi/*.so
-
-vendor/ohos-net/**/bin/
-vendor/ohos-net/**/obj/
+packages/scratch-link/dotnet/ohos-net/runtime/runtime.linux-musl-*/
+packages/scratch-link/dotnet/**/bin/
+packages/scratch-link/dotnet/**/obj/
+packages/scratch-link/dotnet/napi/*.so
+apps/tesslo/build-profile*.local
