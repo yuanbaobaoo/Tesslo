@@ -1,17 +1,36 @@
 # C# Scratch Link
 
-This directory is the C# implementation of the Scratch Link protocol.
+C# implementation of the Scratch Link protocol for Tesslo.
 
-- `Tesslo.Link.Server/` — net9.0 NativeAOT server for OHOS `linux-musl-arm64`.
-- Host test: `dotnet run --project packages/link/dotnet/Tesslo.Link.Server` (defaults to 127.0.0.1:20111).
-- OHOS cross build: `pnpm build:link:csharp` (requires .NET 9.0.104 and OHOS Native SDK 26).
-- Current scope: WebSocket handshake, `getVersion`, `discover` + fake `didDiscoverPeripheral`,
-  `connect`, `read`, `write`, `startNotifications`, `stopNotifications`.
-- HAP integration: `napi/libtesslolink.so` loads `TessloLinkNative.so`; ArkTS starts it on
-  20111 and Electron skips the JS link when the C# library is present.
-- Verified on device: `getVersion` and `discover`.
-- BLE scan: C# talks to `apps/ohos/web_engine/.../BleTcpBridge.ets` over 127.0.0.1:20113;
-  real scan observed 75 devices on device.
-- GATT connect/getServices/read/write/startNotifications/stopNotifications are implemented
-  over the same bridge; micro:bit/WeDo hardware regression is pending.
-- Next: BT Classic and protocol state-machine parity.
+- `Tesslo.Link/` — protocol server, WebSocket handshake, JSON-RPC, BLE bridge client.
+- `Tesslo.Link.Server/` — net9.0 host executable for local testing.
+- `Tesslo.Link.Native/` — NativeAOT shared library exporting C entry points.
+- `napi/libtesslolink.so` — NAPI bridge used by the HarmonyOS host.
+- `OhosBleBridge.cs` — C# client for `127.0.0.1:20113` (`BleTcpBridge.ets`).
+
+Build:
+
+```bash
+pnpm build:link:csharp
+```
+
+Requires .NET SDK 9.0.104 and OHOS Native SDK 26. The command publishes the
+NativeAOT library, builds the NAPI bridge, and deploys the libs to
+`apps/ohos/electron/libs/arm64-v8a`.
+
+Runtime on device:
+
+- ArkTS `EntryAbility` starts the C# server on `127.0.0.1:20111`.
+- Electron main skips the TypeScript link when `libtesslolink.so` exists.
+- BLE scan is real; GATT connect/getServices/read/write/notifications are
+  implemented over the ArkTS bridge.
+
+Hardware test:
+
+```bash
+pnpm test:ble -- --device microbit
+pnpm test:ble -- --device wedo
+```
+
+Remaining: BT Classic, full state-machine parity, micro:bit/WeDo hardware
+regression.

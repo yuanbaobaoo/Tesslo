@@ -1,37 +1,39 @@
-# ADR 0001: Electron on HarmonyOS vs ArkTS rewrite
+# ADR 0001: Electron on HarmonyOS
 
 ## Status
 
-Accepted (PoC), revisit after JIT ACL verification.
+Accepted.
 
 ## Context
 
-The goal is an experience consistent with Scratch Desktop on Windows/macOS,
-while following the upstream `scratch-desktop` + `scratch-link` route.
+Tesslo targets the same editing experience as Scratch Desktop on Windows and
+macOS. The editor is web code; the platform-specific parts are the desktop shell,
+the HAP host, file/permission integration, and the hardware bridge.
 
-Two viable routes:
+Routes considered:
 
-1. **Electron on HarmonyOS** — reuse the desktop shell and renderer.
-2. **ArkTS shell + ArkWeb** — rewrite the desktop shell, reuse the web editor.
+1. Electron on HarmonyOS, reusing the desktop main process and renderer.
+2. ArkTS shell + ArkWeb, reusing only the web editor.
 
 ## Decision
 
-Start with the Electron route.
+Use the Electron route for v1, with a minimal HarmonyOS host and a C# Scratch
+Link server loaded through NativeAOT/NAPI.
 
 ## Rationale
 
-- Reuses the official desktop main process and renderer HOCs.
-- Keeps upstream tracking cheap: patch only the platform edges.
-- Electron 40 is available on HarmonyOS.
-- Scratch Desktop's required APIs (dialogs, downloads, permissions, USB/HID)
-  are reported as supported by the Electron-on-HarmonyOS API matrix.
+- Reuses the official desktop shell and its file/dialog/permission behavior.
+- Keeps the editor on the same source line as Scratch Desktop.
+- The HAP host can stay small: boot Electron, host its window, and expose the
+  BLE bridge.
+- C# reuses the upstream Scratch Link protocol implementation; NativeAOT is the
+  supported .NET runtime on HarmonyOS.
 
 ## Consequences
 
 - Requires the JIT ACL permission
   `ohos.permission.kernel.ALLOW_WRITABLE_CODE_MEMORY`.
-- Target devices are HarmonyOS tablets / 2-in-1; phones are out of scope.
-- The HAP packaging layer is custom (electron-builder does not emit HAP).
-- If JIT ACL is denied or phone support becomes mandatory, switch to the
-  ArkTS/ArkWeb shell route. The Scratch Link implementation and the editor
-  dependency remain unchanged.
+- Targets HarmonyOS 7 tablets / 2-in-1; phones are out of scope.
+- HAP packaging is custom; it is not electron-builder output.
+- If JIT ACL is denied or phone support becomes mandatory, the ArkWeb shell
+  remains the fallback route; the editor source and BLE bridge can be reused.

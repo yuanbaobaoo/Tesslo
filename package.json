@@ -26,7 +26,8 @@
     "dev:ohos": "node scripts/dev-ohos.mjs",
     "vendor": "node scripts/vendor.mjs",
     "test": "pnpm test:link",
-    "test:link": "node --test packages/link/test/*.test.js packages/protocol-tests/test/*.test.js"
+    "test:link": "node --test packages/link/test/*.test.js packages/protocol-tests/test/*.test.js",
+    "test:ble": "node scripts/test-ble-device.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -1,76 +1,95 @@
 # Device testing (HarmonyOS 7)
 
-Emulators can verify startup, UI, DOM, media paths, the VM, Scratch Link, and web dialogs.
-They cannot verify WebGL or Bluetooth: the HarmonyOS 7 emulator images have no WebGL backend and no Bluetooth hardware. Run the checks below on a real tablet or 2in1 device.
-
-## 1. Prepare
+## Prepare
 
 - HarmonyOS 7 device with developer mode and USB debugging enabled.
 - `hdc list targets` shows the device serial.
-- HarmonyOS SDK 26 command line tools and JDK 21 available; `scripts/ohos-common.mjs`
-  auto-detects `OHOS_COMMAND_LINE_TOOLS_ROOT`, `~/command-line-tools`, or `hvigorw` on PATH.
+- HarmonyOS SDK 26 command line tools and JDK 21 available. `scripts/ohos-common.mjs`
+  auto-detects `OHOS_COMMAND_LINE_TOOLS_ROOT`, `~/command-line-tools`, or
+  `hvigorw` on PATH.
+- .NET SDK 9.0.104 at `~/.dotnet` (or `DOTNET_ROOT`) for the C# link.
 
-Signing is device/account bound. If the local `apps/ohos/build-profile.json5` was generated against an emulator, remove it and regenerate:
+Signing is device/account bound. If `apps/ohos/build-profile.json5` was generated
+for an emulator, remove it and let `dev:ohos` regenerate:
 
 ```sh
 rm -f apps/ohos/build-profile.json5
-hdc list targets          # confirm the physical device is the only target
-pnpm dev:ohos -- --device <serial>  # builds signed HAP, installs, launches, collects evidence
+pnpm dev:ohos -- --device <serial>
 ```
 
-`build-profile.json5` is gitignored; never commit it or files under `~/.ohos/config`.
+`build-profile.json5` and files under `~/.ohos/config` are local; do not commit them.
 
-## 2. Build and install
+## Build and install
 
 ```sh
+pnpm build
+pnpm build:link:csharp
 pnpm build:hap                         # unsigned HAP
 pnpm build:hap -- --signed             # signed HAP
 pnpm dev:ohos -- --device <serial>     # signed build + install + launch + evidence
 ```
 
-`dev:ohos` installs the HAP, launches Tesslo, waits for startup, and writes
-`build/verify/<serial>-tesslo-main.log` plus `build/verify/<serial>-tesslo.jpeg`.
-Accept the clipboard and Bluetooth permission prompts on the device when they appear.
+`dev:ohos` writes `build/verify/<serial>-tesslo-main.log` and
+`build/verify/<serial>-tesslo.jpeg`. Accept permission prompts on the device.
 
-## 3. Pass criteria
+## Pass criteria
 
-### WebGL
+### Editor / WebGL
 
-`build/verify/tesslo-main.log` must contain:
+`build/verify/<serial>-tesslo-main.log` must contain:
 
 ```text
 webgl probe {"webgl":true,"webgl2":true,...}
 ```
 
-If both are `false`, the stage, paint editor, pen, and costume thumbnails will not work. Capture:
-- the probe line,
-- `hdc shell param get const.product.model`,
-- `hdc shell param get const.ohos.apiversion`,
-- any `cppcrash-org.tesslo.app-*` log under `/data/log/faultlog/faultlogger/`.
+If false, capture the probe line, `hdc shell param get const.product.model`,
+`hdc shell param get const.ohos.apiversion`, and any
+`cppcrash-org.tesslo.app-*` log.
 
-### Scratch Link / BLE
+### C# Scratch Link
 
-1. Enable Bluetooth.
-2. Add the micro:bit extension in Tesslo; the first use shows the "发现和连接附近的设备" prompt.
-3. Pair/connect a micro:bit and confirm blocks report data.
+The main log should contain:
 
-The device-side server listens on `127.0.0.1:20111`; host debugging:
+```text
+C# Scratch Link present at .../libtesslolink.so; skipping JS link
+```
+
+The link log is `/data/app/el2/100/base/org.tesslo.app/files/tesslo-link.log`.
+Host verification:
 
 ```sh
-hdc fport tcp:20111 tcp:20111
-node packages/protocol-tests/test/conformance.test.js   # optional host-side probe
+hdc -t <serial> fport tcp:20111 tcp:20111
+node -e 'const W=require("ws");const w=new W("ws://127.0.0.1:20111/scratch/ble");w.on("open",()=>w.send(JSON.stringify({jsonrpc:"2.0",id:1,method:"getVersion"})));w.on("message",m=>{console.log(m.toString());w.close()})'
 ```
+
+### micro:bit / WeDo
+
+Use the dedicated protocol test script instead of the UI:
+
+```sh
+pnpm test:ble -- --device microbit --serial <serial>
+pnpm test:ble -- --device wedo --serial <serial>
+```
+
+The script forwards 20111, runs `discover → connect → getServices`, then:
+
+- micro:bit: subscribes to the notify characteristic and writes a
+  `displayText("Tesslo")` command.
+- WeDo: subscribes to `ATTACHED_IO`, reads `LOW_VOLTAGE_ALERT`, and sets the LED
+  green.
+
+Pass means the expected device is discovered, the service is present, and the
+write/subscribe requests return without a protocol error. With no device, the
+script fails with `no ... found`; that is expected.
 
 ### File save/open
 
-1. `文件 → 保存到电脑`; confirm the system picker defaults to `Scratch作品.sb3` and the `.sb3` filter.
-2. Tap 保存 manually (the system picker rejects synthetic input) and check the Downloads folder.
-3. Reopen the saved file with `文件 → 从电脑中上传`.
+1. `文件 → 保存到电脑`; confirm the picker defaults to `Scratch作品.sb3`.
+2. Tap 保存 manually (the system picker rejects synthetic input).
+3. Reopen with `文件 → 从电脑中上传`.
 
-## 4. Known emulator limits
+## Emulator limits
 
 - No WebGL: Electron and ArkWeb both report `webgl=false`; UI renders, stage does not.
-- No Bluetooth hardware: the ArkTS scan call returns `Bluetooth disabled`.
-- System permission and file pickers reject `uinput`/`uitest` taps; a human tap is required.
-
-These are environment limits, not Tesslo regressions. Record device evidence in `docs/status.md` when a real device run completes.
+- No Bluetooth hardware: scanning reports `Bluetooth is off`/no devices.
+- System permission and file pickers reject synthetic taps; a human tap is required.

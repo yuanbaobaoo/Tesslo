@@ -21,9 +21,11 @@ not clone or fetch an upstream Git repository.
 | `scratch-parser` | `6.0.0` | `packages/scratch-parser` | source tag carries `0.0.0-development`; local version is pinned to 6.0.0 |
 | `scratch-sb1-converter` | `2.0.279` | `packages/scratch-sb1-converter` | build produces `playground/main.js` |
 | `scratch-link` | `v2.1.0-develop.10` (`4da54e14...`) | `vendor/scratch-link-csharp` | C# reference only; protocol 1.3 |
-| `scratch-link` implementation | local | `packages/link` | TypeScript protocol server |
+| C# link implementation | local | `packages/link/dotnet` | HAP runtime server |
+| TS link implementation | local | `packages/link` | desktop fallback |
 | Electron | `40.10.6` | `apps/desktop` | local desktop builds |
 | Electron OHOS runtime | `40.0.1.20260928.2` | `vendor/electron-ohos.lock.json` | binaries are external assets, not git |
+| OHOS NativeAOT runtime | `OpenHarmony.NET.Runtime 0.0.0-alpha.19` | `vendor/ohos-net.lock.json` | .NET 9 / API 26 / arm64 |
 | HarmonyOS SDK | `26` | host toolchain | HarmonyOS 7 |
 
 ## Version policy
