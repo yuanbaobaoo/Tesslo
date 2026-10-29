@@ -35,6 +35,8 @@ UIAbility (ArkTS)
 - Link 通过 20113 把扫描与 GATT 命令交给 ArkTS；ArkTS 负责系统蓝牙 API。
 - 默认素材库不入 JS bundle。Web 端 `WebStorageHelper` 从 20114 读取
   `rawfile/static/fetched`，避免依赖 `resource://` 的 fetch 行为。
+- 角色/造型/背景库的缩略图使用同一个 20114 服务；`/internalapi/asset/` 请求
+  映射到 `rawfile/static/fetched`，因此离线时也能显示。
 
 ## 端口
 

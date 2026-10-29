@@ -48,6 +48,8 @@ pnpm build:web
 - `window.__TESSLO_ASSET_ORIGIN__` 指向本地素材服务，GUI 素材库缩略图不再访问
   `cdn.assets.scratch.mit.edu`；未设置时仍回退到上游 CDN。
 - `onClickAbout` 提供“关于 Tesslo / 隐私政策”，恢复菜单栏帮助入口。
+- 上游品牌资源不修改：菜单栏继续使用 `scratch-logo.svg` 的原始内容，重新构建
+  `scratch-gui` 后会使用当前上游 SVG。
 - webpack 把 GUI 的 `static`、`libraries`、`chunks`、`extension-worker` 复制进
   `web/dist`。
 

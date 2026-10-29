@@ -38,6 +38,9 @@ pnpm build:storage            # 只重建素材加载与请求队列（debug）
 NativeAOT 库，用 OHOS clang 编译 NAPI 桥，然后把产物复制到 HAP 工程的
 `entry/libs/arm64-v8a/`。
 
+修改 `packages/scratch-gui` 后必须重新执行 `pnpm build:gui`，再执行
+`pnpm build:web` 和 `pnpm build:hap`；只重建 web 入口不会更新 GUI bundle。
+
 ## HAP 内容
 
 `pnpm build:hap` 按以下顺序组装：
