@@ -18,9 +18,9 @@ Upstream projects and copyright holders include:
   Copyright (c) Scratch Foundation and contributors
   Licensed under the Apache License, Version 2.0
 
-  zcode-ohos (HarmonyOS Electron HAP shell / web_engine reference)
-  Copyright (c) zcode-ohos contributors
-  Licensed under the Apache License, Version 2.0
+  Electron-on-HarmonyOS runtime and reference HAP sample
+  Copyright (c) Huawei Device Co., Ltd. and contributors
+  Runtime version and source asset: see vendor/electron-ohos.lock.json
 
   harmonypc-electron (Electron-on-HarmonyOS runtime reference)
   https://atomgit.com/jianguoxu/harmonypc-electron

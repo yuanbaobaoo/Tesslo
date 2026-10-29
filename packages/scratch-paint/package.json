@@ -1,0 +1,109 @@
+{
+  "name": "scratch-paint",
+  "version": "4.1.52",
+  "description": "Graphical User Interface for the Scratch 3.0 paint editor, which is used to make and edit sprites for use in projects.",
+  "main": "./dist/scratch-paint.js",
+  "browser": "./src/index.js",
+  "scripts": {
+    "build": "npm run clean && webpack --progress --colors --bail",
+    "clean": "rimraf ./dist && mkdirp dist && rimraf ./playground && mkdirp playground",
+    "i18n:push": "tx-push-src scratch-editor paint-editor ./translations/en.json",
+    "i18n:src": "rimraf ./translations/messages && babel src > tmp.js && rimraf tmp.js && ./scripts/build-i18n-source.js ./translations/messages/ ./translations/",
+    "lint": "eslint",
+    "start": "webpack-dev-server",
+    "test": "npm run unit",
+    "unit": "jest --reporters=default",
+    "watch": "webpack --progress --colors --watch"
+  },
+  "author": "Massachusetts Institute of Technology",
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "@scratch/paper": "^0.11.20221201200345",
+    "@scratch/scratch-svg-renderer": "13.7.2",
+    "classnames": "^2.2.5",
+    "keymirror": "^0.1.1",
+    "lodash.bindall": "^4.4.0",
+    "lodash.omit": "^4.5.0",
+    "minilog": "^3.1.0",
+    "parse-color": "^1.0.0",
+    "prop-types": "^15.5.10"
+  },
+  "peerDependencies": {
+    "react": "^18",
+    "react-dom": "^18",
+    "react-intl": "^6",
+    "react-intl-redux": "^0.7 || ^2.0.0",
+    "react-popover": "^0.5",
+    "react-redux": "^8",
+    "react-responsive": "^9",
+    "react-style-proptype": "^3",
+    "react-tooltip": "^4",
+    "redux": "^4",
+    "scratch-render-fonts": "1.0.252"
+  },
+  "devDependencies": {
+    "@babel/cli": "7.28.6",
+    "@babel/core": "7.29.0",
+    "@babel/node": "7.29.0",
+    "@babel/preset-env": "7.29.3",
+    "@babel/preset-react": "7.28.5",
+    "@testing-library/react": "8.0.9",
+    "autoprefixer": "9.8.8",
+    "babel-jest": "29.7.0",
+    "babel-loader": "8.4.1",
+    "babel-plugin-react-intl": "3.5.1",
+    "babel-plugin-transform-object-rest-spread": "6.26.0",
+    "canvas": "3.2.3",
+    "css-loader": "3.6.0",
+    "eslint": "9.39.4",
+    "eslint-config-scratch": "12.0.51",
+    "globals": "16.5.0",
+    "html-webpack-plugin": "3.2.0",
+    "jest": "27.5.1",
+    "jest-junit": "13.2.0",
+    "json": "9.0.6",
+    "lodash.defaultsdeep": "4.6.1",
+    "mkdirp": "1.0.4",
+    "postcss-import": "12.0.1",
+    "postcss-loader": "3.0.0",
+    "postcss-simple-vars": "5.0.2",
+    "raf": "3.4.1",
+    "react-test-renderer": "18.3.1",
+    "redux-mock-store": "1.5.5",
+    "redux-throttle": "0.1.1",
+    "regenerator-runtime": "0.13.9",
+    "rimraf": "2.7.1",
+    "scratch-l10n": "6.1.75",
+    "style-loader": "1.3.0",
+    "svg-url-loader": "3.0.3",
+    "tap": "21.7.2",
+    "uglifyjs-webpack-plugin": "2.2.0",
+    "url-loader": "2.3.0",
+    "webpack": "4.47.0",
+    "webpack-cli": "3.3.12",
+    "webpack-dev-server": "3.11.3"
+  },
+  "jest": {
+    "setupFiles": [
+      "raf/polyfill"
+    ],
+    "testEnvironment": "jsdom",
+    "testURL": "http://localhost",
+    "moduleNameMapper": {
+      "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/test/__mocks__/fileMock.js",
+      "\\.(css|less)$": "<rootDir>/test/__mocks__/styleMock.js",
+      "^css-tree/utils$": "<rootDir>/node_modules/css-tree/cjs/utils/index.cjs"
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!intl-messageformat|intl-messageformat-parser).+\\.js$"
+    ]
+  },
+  "jest-junit": {
+    "outputDirectory": "./test/results"
+  },
+  "browserslist": [
+    "last 3 versions",
+    "Safari >= 8",
+    "iOS >= 8"
+  ]
+}

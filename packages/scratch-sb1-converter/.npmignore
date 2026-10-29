@@ -1,0 +1,18 @@
+# Development files
+.eslintrc.js
+/.editorconfig
+/.eslintignore
+/.gitattributes
+/.github
+/.travis.yml
+/test
+
+# Exclude build created docs, but allow other playground/* files
+/playground/docs
+
+# Coverage created files
+/.nyc_output
+/coverage
+
+# Exclude already built packages from testing with npm pack
+/scratch-sb1-converter-*.{tar,tgz}

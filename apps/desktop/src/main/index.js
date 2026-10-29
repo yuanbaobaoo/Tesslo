@@ -1,0 +1,624 @@
+import {BrowserWindow, Menu, app, dialog, ipcMain, shell, systemPreferences} from 'electron';
+import fs from 'fs-extra';
+import path from 'path';
+import {URL} from 'url';
+import {promisify} from 'util';
+
+import argv from './argv';
+import {getFilterForExtension} from './FileFilters';
+import telemetry from './ScratchDesktopTelemetry';
+import MacOSMenu from './MacOSMenu';
+import log from '../common/log.js';
+import packageJson from '../../package.json';
+
+const tessloLogPath = path.join(app.getPath('userData'), 'tesslo-main.log');
+const tessloLog = message => {
+    try {
+        fs.ensureDirSync(path.dirname(tessloLogPath));
+        fs.appendFileSync(tessloLogPath, `${new Date().toISOString()} ${message}\n`);
+    } catch {
+        // logging must never change startup behavior
+    }
+};
+process.on('uncaughtException', error => tessloLog(`uncaught ${error.stack || error}`));
+process.on('unhandledRejection', error => tessloLog(`rejection ${error && error.stack || error}`));
+tessloLog(`boot ${process.platform}/${process.arch} argv=${JSON.stringify(process.argv)} appPath=${app.getAppPath()}`);
+
+telemetry.appWasOpened();
+
+// const defaultSize = {width: 1096, height: 715}; // minimum
+const defaultSize = {width: 1280, height: 800}; // good for MAS screenshots
+
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const devToolKey = ((process.platform === 'darwin') ?
+    { // macOS: command+option+i
+        alt: true, // option
+        control: false,
+        meta: true, // command
+        shift: false,
+        code: 'KeyI'
+    } : { // Windows / linux: control+shift+i
+        alt: false,
+        control: true,
+        meta: false, // Windows key
+        shift: true,
+        code: 'KeyI'
+    }
+);
+
+// global window references prevent them from being garbage-collected
+const _windows = {};
+const PORT = process.env.PORT || 8601;
+
+// enable connecting to Scratch Link even if we DNS / Internet access is not available
+// this must happen BEFORE the app ready event!
+app.commandLine.appendSwitch('host-resolver-rules', 'MAP device-manager.scratch.mit.edu 127.0.0.1');
+
+// HarmonyOS: keep the shell's native EGL backend. Forcing ANGLE/SwiftShader
+// disables GPU access (frequent GPU-process crashes) on HarmonyOS 7 hardware.
+const isHarmonyOS = process.argv.some(arg => arg.startsWith('--ozone-platform=ohos'));
+
+const displayPermissionDeniedWarning = (browserWindow, permissionType) => {
+    let title;
+    let message;
+    switch (permissionType) {
+    case 'camera':
+        title = 'Camera Permission Denied';
+        message = 'Permission to use the camera has been denied. ' +
+            'Tesslo will not be able to take a photo or use video sensing blocks.';
+        break;
+    case 'microphone':
+        title = 'Microphone Permission Denied';
+        message = 'Permission to use the microphone has been denied. ' +
+            'Tesslo will not be able to record sounds or detect loudness.';
+        break;
+    default: // shouldn't ever happen...
+        title = 'Permission Denied';
+        message = 'A permission has been denied.';
+    }
+
+    let instructions;
+    switch (process.platform) {
+    case 'darwin':
+        instructions = 'To change Tesslo permissions, please check "Security & Privacy" in System Preferences.';
+        break;
+    default:
+        instructions = 'To change Tesslo permissions, please check your system settings and restart Tesslo.';
+        break;
+    }
+    message = `${message}\n\n${instructions}`;
+
+    dialog.showMessageBox(browserWindow, {type: 'warning', title, message});
+};
+
+/**
+ * Build an absolute URL from a relative one, optionally adding search query parameters.
+ * The base of the URL will depend on whether or not the application is running in development mode.
+ * @param {string} url - the relative URL, like 'index.html'
+ * @param {*} search - the optional "search" parameters (the part of the URL after '?'), like "route=about"
+ * @returns {string} - an absolute URL as a string
+ */
+const makeFullUrl = (url, search = null) => {
+    const baseUrl = (isDevelopment ?
+        `http://localhost:${PORT}/` :
+        `file://${path.join(__dirname, '../renderer')}/`
+    );
+    const fullUrl = new URL(url, baseUrl);
+    if (search) {
+        fullUrl.search = search; // automatically percent-encodes anything that needs it
+    }
+    return fullUrl.toString();
+};
+
+/**
+ * Prompt in a platform-specific way for permission to access the microphone or camera, if Electron supports doing so.
+ * Any application-level checks, such as whether or not a particular frame or document should be allowed to ask,
+ * should be done before calling this function.
+ * This function may return a Promise!
+ *
+ * @param {string} mediaType - one of Electron's media types, like 'microphone' or 'camera'
+ * @returns {boolean|Promise.<boolean>} - true if permission granted, false otherwise.
+ */
+const askForMediaAccess = mediaType => {
+    if (systemPreferences.askForMediaAccess) {
+        // Electron currently only implements this on macOS
+        // This returns a Promise
+        return systemPreferences.askForMediaAccess(mediaType);
+    }
+    // For other platforms we can't reasonably do anything other than assume we have access.
+    return true;
+};
+
+const handlePermissionRequest = async (webContents, permission, callback, details) => {
+    if (webContents !== _windows.main.webContents) {
+        // deny: request came from somewhere other than the main window's web contents
+        return callback(false);
+    }
+    if (!details.isMainFrame) {
+        // deny: request came from a subframe of the main window, not the main frame
+        return callback(false);
+    }
+    if (permission !== 'media') {
+        // deny: request is for some other kind of access like notifications or pointerLock
+        return callback(false);
+    }
+    const requiredBase = makeFullUrl('');
+    if (details.requestingUrl.indexOf(requiredBase) !== 0) {
+        // deny: request came from a URL outside of our "sandbox"
+        return callback(false);
+    }
+    let askForMicrophone = false;
+    let askForCamera = false;
+    for (const mediaType of details.mediaTypes) {
+        switch (mediaType) {
+        case 'audio':
+            askForMicrophone = true;
+            break;
+        case 'video':
+            askForCamera = true;
+            break;
+        default:
+            // deny: unhandled media type
+            return callback(false);
+        }
+    }
+    const parentWindow = _windows.main; // if we ever allow media in non-main windows we'll also need to change this
+    if (askForMicrophone) {
+        const microphoneResult = await askForMediaAccess('microphone');
+        if (!microphoneResult) {
+            displayPermissionDeniedWarning(parentWindow, 'microphone');
+            return callback(false);
+        }
+    }
+    if (askForCamera) {
+        const cameraResult = await askForMediaAccess('camera');
+        if (!cameraResult) {
+            displayPermissionDeniedWarning(parentWindow, 'camera');
+            return callback(false);
+        }
+    }
+    return callback(true);
+};
+
+// Protocols safe to hand to the OS via shell.openExternal. Anything else
+// (file:, javascript:, custom URI handlers, ...) is blocked to limit what an
+// in-renderer `window.open` can launch.
+const ALLOWED_EXTERNAL_PROTOCOLS = ['http:', 'https:', 'mailto:'];
+
+const createWindow = ({search = null, url = 'index.html', ...browserWindowOptions}) => {
+    tessloLog(`createWindow ${url} ${JSON.stringify(browserWindowOptions)}`);
+    const window = new BrowserWindow({
+        useContentSize: true,
+        show: false,
+        webPreferences: {
+            contextIsolation: false,
+            nodeIntegration: true
+        },
+        ...browserWindowOptions
+    });
+    const webContents = window.webContents;
+
+    webContents.on('console-message', event => {
+        tessloLog(
+            `renderer console level=${event.level} ${event.message} (${event.sourceId}:${event.lineNumber})`
+        );
+    });
+    webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+        tessloLog(`renderer did-fail-load ${errorCode} ${errorDescription} ${validatedURL}`);
+    });
+    webContents.on('render-process-gone', (event, details) => {
+        tessloLog(`renderer gone ${JSON.stringify(details)}`);
+    });
+
+    webContents.session.setPermissionRequestHandler(handlePermissionRequest);
+
+    webContents.on('before-input-event', (event, input) => {
+        if (input.code === devToolKey.code &&
+            input.alt === devToolKey.alt &&
+            input.control === devToolKey.control &&
+            input.meta === devToolKey.meta &&
+            input.shift === devToolKey.shift &&
+            input.type === 'keyDown' &&
+            !input.isAutoRepeat &&
+            !input.isComposing) {
+            event.preventDefault();
+            webContents.openDevTools({mode: 'detach', activate: true});
+        }
+    });
+
+    webContents.setWindowOpenHandler(({url: newWindowUrl}) => {
+        let protocol = '';
+        try {
+            protocol = new URL(newWindowUrl).protocol;
+        } catch { /* invalid URL leaves protocol empty, which won't match the allowlist */ }
+        if (ALLOWED_EXTERNAL_PROTOCOLS.includes(protocol)) {
+            shell.openExternal(newWindowUrl).catch(err => log.error('shell.openExternal failed:', err));
+        } else {
+            log.warn(`Blocked window.open: ${newWindowUrl}`);
+        }
+        return {action: 'deny'};
+    });
+
+    const fullUrl = makeFullUrl(url, search);
+    window.loadURL(fullUrl);
+    window.once('ready-to-show', () => {
+        webContents.send('ready-to-show');
+    });
+
+    return window;
+};
+
+const createAboutWindow = () => {
+    const window = createWindow({
+        width: 400,
+        height: 400,
+        parent: _windows.main,
+        search: 'route=about',
+        title: `About ${packageJson.productName}`
+    });
+    return window;
+};
+
+const createPrivacyWindow = () => {
+    const window = createWindow({
+        width: _windows.main.width * 0.8,
+        height: _windows.main.height * 0.8,
+        parent: _windows.main,
+        search: 'route=privacy',
+        title: `${packageJson.productName} Privacy Policy`
+    });
+    return window;
+};
+
+const createUsbWindow = () => {
+    const window = createWindow({
+        width: 400,
+        height: 300,
+        parent: _windows.main,
+        search: 'route=usb',
+        modal: true,
+        frame: false
+    });
+
+    // Filters from navigator.usb.requestDevice do not appear to be available here.
+    // Hard code to micro:bit since that is the only device that currently uses this api.
+    const getIsMicroBit = device => device.vendorId === 0x0d28 && device.productId === 0x0204;
+    let deviceList = [];
+    let selectedDeviceCallback;
+
+    _windows.main.webContents.session.on('select-usb-device', (event, details, callback) => {
+        deviceList = details.deviceList.filter(getIsMicroBit);
+        selectedDeviceCallback = callback;
+
+        window.webContents.send('usb-device-list', deviceList);
+        window.show();
+
+        event.preventDefault();
+    });
+
+    _windows.main.webContents.session.on('usb-device-added', (_event, device) => {
+        if (!getIsMicroBit(device)) return;
+        deviceList.push(device);
+        window.webContents.send('usb-device-list', deviceList);
+    });
+
+    _windows.main.webContents.session.on('usb-device-removed', (_event, device) => {
+        if (!getIsMicroBit(device)) return;
+        deviceList = deviceList.filter(existing => existing.deviceId !== device.deviceId);
+        window.webContents.send('usb-device-list', deviceList);
+    });
+
+    ipcMain.on('usb-device-selected', (_event, message) => {
+        selectedDeviceCallback(message);
+        window.hide();
+    });
+
+    return window;
+};
+
+const getIsProjectSave = downloadItem => {
+    switch (downloadItem.getMimeType()) {
+    case 'application/x.scratch.sb3':
+        return true;
+    }
+    return false;
+};
+
+const createMainWindow = () => {
+    const window = createWindow({
+        width: defaultSize.width,
+        height: defaultSize.height,
+        title: `${packageJson.productName} ${packageJson.version}` // something like "Scratch 3.14"
+    });
+    const webContents = window.webContents;
+
+    webContents.session.on('will-download', (willDownloadEvent, downloadItem) => {
+        const isProjectSave = getIsProjectSave(downloadItem);
+        const itemPath = downloadItem.getFilename();
+        const baseName = path.basename(itemPath);
+        const extName = path.extname(baseName);
+        const options = {
+            defaultPath: baseName
+        };
+        if (extName) {
+            const extNameNoDot = extName.replace(/^\./, '');
+            options.filters = [getFilterForExtension(extNameNoDot)];
+        }
+        const userChosenPath = dialog.showSaveDialogSync(window, options);
+        // this will be falsy if the user canceled the save
+        if (userChosenPath) {
+            const userBaseName = path.basename(userChosenPath);
+            const tempPath = path.join(app.getPath('temp'), userBaseName);
+
+            // WARNING: `setSavePath` on this item is only valid during the `will-download` event. Calling the async
+            // version of `showSaveDialog` means the event will finish before we get here, so `setSavePath` will be
+            // ignored. For that reason we need to call `showSaveDialogSync` above.
+            downloadItem.setSavePath(tempPath);
+
+            downloadItem.on('done', async (doneEvent, doneState) => {
+                try {
+                    if (doneState !== 'completed') {
+                        // The download was canceled or interrupted. Cancel the telemetry event and delete the file.
+                        throw new Error(`save ${doneState}`); // "save cancelled" or "save interrupted"
+                    }
+                    if (systemPreferences.fileAccessPersist) {
+                        // HarmonyOS requires persisted access for a path chosen through the picker.
+                        // The API is OHOS-only; guard so macOS/Windows builds keep working.
+                        try {
+                            await systemPreferences.fileAccessPersist(userChosenPath);
+                        } catch (persistError) {
+                            log.warn(`fileAccessPersist failed for ${userChosenPath}: ${persistError.message}`);
+                        }
+                    }
+                    await fs.move(tempPath, userChosenPath, {overwrite: true});
+                    if (isProjectSave) {
+                        const newProjectTitle = path.basename(userChosenPath, extName);
+                        webContents.send('setTitleFromSave', {title: newProjectTitle});
+
+                        // "setTitleFromSave" will set the project title but GUI has already reported the telemetry
+                        // event using the old title. This call lets the telemetry client know that the save was
+                        // actually completed and the event should be committed to the event queue with this new title.
+                        telemetry.projectSaveCompleted(newProjectTitle);
+                    }
+                } catch (e) {
+                    if (isProjectSave) {
+                        telemetry.projectSaveCanceled();
+                    }
+                    // don't clean up until after the message box to allow troubleshooting / recovery
+                    await dialog.showMessageBox(window, {
+                        type: 'error',
+                        title: 'Failed to save project',
+                        message: `Save failed:\n${userChosenPath}`,
+                        detail: e.message
+                    });
+                    fs.exists(tempPath).then(exists => {
+                        if (exists) {
+                            fs.unlink(tempPath);
+                        }
+                    });
+                }
+            });
+        } else {
+            downloadItem.cancel();
+            if (isProjectSave) {
+                telemetry.projectSaveCanceled();
+            }
+        }
+    });
+
+    webContents.on('will-prevent-unload', ev => {
+        const choice = dialog.showMessageBoxSync(window, {
+            title: packageJson.productName,
+            type: 'question',
+            message: 'Leave Tesslo?',
+            detail: 'Any unsaved changes will be lost.',
+            buttons: ['Stay', 'Leave'],
+            cancelId: 0, // closing the dialog means "stay"
+            defaultId: 0 // pressing enter or space without explicitly selecting something means "stay"
+        });
+        const shouldQuit = (choice === 1);
+        if (shouldQuit) {
+            ev.preventDefault();
+        }
+    });
+
+    window.once('ready-to-show', () => {
+        window.show();
+    });
+
+    return window;
+};
+
+if (process.platform === 'darwin') {
+    const osxMenu = Menu.buildFromTemplate(MacOSMenu(app));
+    Menu.setApplicationMenu(osxMenu);
+} else {
+    // disable menu for other platforms
+    Menu.setApplicationMenu(null);
+}
+
+// quit application when all windows are closed
+app.on('window-all-closed', () => {
+    tessloLog('window-all-closed');
+    app.quit();
+});
+
+app.on('will-quit', () => {
+    telemetry.appWillClose();
+});
+
+// work around https://github.com/MarshallOfSound/electron-devtools-installer/issues/122
+// which seems to be a result of https://github.com/electron/electron/issues/19468
+if (process.platform === 'win32') {
+    const appUserDataPath = app.getPath('userData');
+    const devToolsExtensionsPath = path.join(appUserDataPath, 'DevTools Extensions');
+    try {
+        fs.unlinkSync(devToolsExtensionsPath);
+    } catch {
+        // don't complain if the file doesn't exist
+    }
+}
+
+// HarmonyOS runs Scratch Link inside the app so the VM can reach ws://127.0.0.1:20111.
+const startScratchLink = () => {
+    if (!isHarmonyOS || process.env.TESSLO_SCRATCH_LINK === '0') return;
+    const csharpLink = path.join(path.dirname(process.execPath), 'libtesslolink.so');
+    if (fs.existsSync(csharpLink)) {
+        tessloLog(`C# Scratch Link present at ${csharpLink}; skipping JS link`);
+        return;
+    }
+    try {
+        const file = path.join(app.getAppPath(), 'link.cjs');
+        const {startScratchLinkServer} = eval('require')(file);
+        startScratchLinkServer({
+            host: '127.0.0.1',
+            port: Number(process.env.TESSLO_LINK_PORT || 20111)
+        }).then(server => tessloLog(`scratch link listening ${JSON.stringify(server.address())}`))
+            .catch(error => tessloLog(`scratch link failed ${error.message}`));
+    } catch (error) {
+        tessloLog(`scratch link load failed ${error.message}`);
+    }
+};
+
+// create main BrowserWindow when electron is ready
+app.on('ready', () => {
+    startScratchLink();
+    if (isDevelopment) {
+        import('electron-devtools-installer').then(importedModule => {
+            // v4 publishes `installExtension` as a named export; v3 published
+            // it as the default export. Use the named export.
+            const {installExtension, REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS} = importedModule;
+            const extensionsToInstall = [REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS];
+            for (const extension of extensionsToInstall) {
+                // WARNING: depending on a lot of things including the version of Electron `installExtension` might
+                // return a promise that never resolves, especially if the extension is already installed.
+                installExtension(extension).then(
+                    // v3 resolved with a string name; v4 resolves with an Electron
+                    // Extension object. Read `.name` rather than relying on toString.
+                    installed => log(`Installed dev extension: ${installed.name}`),
+                    errorMessage => log.error(`Error installing dev extension: ${errorMessage}`)
+                );
+            }
+        });
+    }
+
+    _windows.main = createMainWindow();
+    tessloLog('main window created');
+    _windows.main.webContents.once('did-finish-load', async () => {
+        try {
+            const gpu = await _windows.main.webContents.executeJavaScript(`(() => {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl', {alpha: false, stencil: true, antialias: false}) ||
+                    canvas.getContext('experimental-webgl');
+                const gl2 = document.createElement('canvas').getContext('webgl2');
+                return {
+                    webgl: !!gl,
+                    webgl2: !!gl2,
+                    renderer: gl ? gl.getParameter(gl.RENDERER) : null,
+                    vendor: gl ? gl.getParameter(gl.VENDOR) : null
+                };
+            })()`);
+            tessloLog(`webgl probe ${JSON.stringify(gpu)}`);
+        } catch (error) {
+            tessloLog(`webgl probe failed ${error.message}`);
+        }
+    });
+    _windows.main.on('closed', () => {
+        tessloLog('main window closed');
+        delete _windows.main;
+    });
+
+    if (process.env.TESSLO_SMOKE === '1') {
+        const smokeTimeout = setTimeout(() => {
+            console.error('[tesslo-smoke] timeout waiting for renderer');
+            app.exit(1);
+        }, 30000);
+        _windows.main.webContents.once('did-finish-load', () => {
+            console.log('[tesslo-smoke] did-finish-load');
+            setTimeout(async () => {
+                try {
+                    const result = await _windows.main.webContents.executeJavaScript(`({
+                        title: document.title,
+                        href: location.href,
+                        appText: (document.querySelector('#app')?.innerText || '').slice(0, 300),
+                        hasBlocks: !!document.querySelector('[class*="blocks"]'),
+                        hasStage: !!document.querySelector('canvas')
+                    })`);
+                    console.log(`[tesslo-smoke] renderer ${JSON.stringify(result)}`);
+                    clearTimeout(smokeTimeout);
+                    app.quit();
+                } catch (error) {
+                    console.error(`[tesslo-smoke] evaluate failed: ${error.message}`);
+                    clearTimeout(smokeTimeout);
+                    app.exit(1);
+                }
+            }, 5000);
+        });
+        _windows.main.webContents.once('did-fail-load', (event, code, description) => {
+            console.error(`[tesslo-smoke] did-fail-load ${code} ${description}`);
+            clearTimeout(smokeTimeout);
+            app.exit(1);
+        });
+    }
+    _windows.about = createAboutWindow();
+    _windows.about.on('close', event => {
+        event.preventDefault();
+        _windows.about.hide();
+    });
+    _windows.privacy = createPrivacyWindow();
+    _windows.privacy.on('close', event => {
+        event.preventDefault();
+        _windows.privacy.hide();
+    });
+
+    // WebUSB is not available on HarmonyOS; BLE devices go through Scratch Link.
+    if (!isHarmonyOS) {
+        _windows.usb = createUsbWindow();
+    }
+});
+
+ipcMain.on('open-about-window', () => {
+    _windows.about.show();
+});
+
+ipcMain.on('open-privacy-policy-window', () => {
+    _windows.privacy.show();
+});
+
+// Renderer-side replacement for the legacy `remote.dialog` call. Keeping the
+// dialog in the main process works on Electron 40, where `remote` is gone.
+ipcMain.handle('tesslo-show-error', async (event, {title, message, detail} = {}) => {
+    await dialog.showMessageBox(_windows.main, {
+        type: 'error',
+        title: title || 'Tesslo',
+        message: message || 'An error occurred.',
+        detail
+    });
+});
+
+// start loading initial project data before the GUI needs it so the load seems faster
+const initialProjectDataPromise = (async () => {
+    if (argv._.length === 0) {
+        // no command line argument means no initial project data
+        return;
+    }
+    if (argv._.length > 1) {
+        log.warn(`Expected 1 command line argument but received ${argv._.length}.`);
+    }
+    const projectPath = argv._[argv._.length - 1];
+    try {
+        const projectData = await promisify(fs.readFile)(projectPath, null);
+        return projectData;
+    } catch (e) {
+        log.error(`Error loading project data: ${e}`);
+        dialog.showMessageBox(_windows.main, {
+            type: 'error',
+            title: 'Failed to load project',
+            message: `Could not load project from file:\n${projectPath}`,
+            detail: e.message
+        });
+    }
+    // load failed: initial project data undefined
+})(); // IIFE
+
+ipcMain.handle('get-initial-project-data', () => initialProjectDataPromise);

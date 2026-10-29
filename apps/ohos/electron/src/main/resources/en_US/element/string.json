@@ -1,0 +1,40 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "Tesslo"
+    },
+    {
+      "name": "button_ok",
+      "value": "ok"
+    },
+    {
+      "name": "button_cancel",
+      "value": "cancel"
+    },
+    {
+      "name": "OpenNewWindow_label",
+      "value": "OpenNewWindow"
+    },
+    {
+      "name": "access_bluetooth",
+      "value": "连接 micro:bit 等蓝牙设备"
+    },
+    {
+      "name": "camera_reason",
+      "value": "Camera access for video sensing"
+    },
+    {
+      "name": "microphone_reason",
+      "value": "Microphone access for recording and loudness"
+    }
+  ]
+}

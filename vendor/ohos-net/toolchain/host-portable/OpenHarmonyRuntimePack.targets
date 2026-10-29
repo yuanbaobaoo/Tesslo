@@ -1,0 +1,29 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    Vendored OpenHarmony NativeAOT runtime pack (arm64-v8a).
+    Replaces the stock linux-musl-arm64 pack so ilc compiles against the
+    OHOS-built CoreLib, GC archives and musl native objects.
+  -->
+
+  <PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux-musl-arm64'))">
+    <_OhosRuntimePack>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'runtime', 'runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler'))</_OhosRuntimePack>
+    <IlcFrameworkNativePath>$([MSBuild]::NormalizePath('$(_OhosRuntimePack)', 'framework'))/</IlcFrameworkNativePath>
+    <IlcSdkPath>$([MSBuild]::NormalizePath('$(_OhosRuntimePack)', 'sdk'))/</IlcSdkPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux-musl-x64'))">
+    <_OhosRuntimePack>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'runtime', 'runtime.linux-musl-x64.microsoft.dotnet.ilcompiler'))</_OhosRuntimePack>
+    <IlcFrameworkNativePath>$([MSBuild]::NormalizePath('$(_OhosRuntimePack)', 'framework'))/</IlcFrameworkNativePath>
+    <IlcSdkPath>$([MSBuild]::NormalizePath('$(_OhosRuntimePack)', 'sdk'))/</IlcSdkPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(_OhosRuntimePack)' != ''">
+    <NativeSharedLibrary Include="$(_OhosRuntimePack)/native/*" />
+  </ItemGroup>
+
+  <Target Name="CopyOpenHarmonyNativeLibs" BeforeTargets="Publish" Condition="'$(_OhosRuntimePack)' != ''">
+    <Copy SourceFiles="@(NativeSharedLibrary)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

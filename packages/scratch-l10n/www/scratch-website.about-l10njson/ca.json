@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Scratch és la comunitat de codi per a infants més gran del món i un llenguatge de programació amb una interfície visual simple que permet crear històries digitals, jocs i animacions a la gent jove. Scratch està dissenyat, desenvolupat i moderat per la{foundationLink}, una organització sense ànim de lucre.",
+    "about.introTwo": "Scratch promou el pensament computacional i les tècniques de resolució de problemes; l'ensenyament i aprenentatge creatiu; l'autoexpressió i col·laboració; i l'equitat en informàtica.",
+    "about.introThree": "Scratch és sempre gratuït i és disponible en més de 70 llengües.",
+    "about.foundationText": "Scratch Foundation",
+    "about.introParents": "Info per a pares",
+    "about.introEducators": "Info per a docents",
+    "about.introLearnMore": "Learn more at Scratch Foundation",
+    "about.support": "Support Scratch",
+    "about.supportDescription1": "Scratch is available for free, thanks to our {supportersLink}. This support helps us provide young people around the world with opportunities to imagine, create, and share.",
+    "about.supportDescription2": "Every dollar donated gives one child access to free, playful, and powerful creative learning through the Scratch community.",
+    "about.supportDescription3": "Join us in helping kids everywhere create what they imagine.",
+    "about.supportersLinkText": "supporters",
+    "about.donateButton": "Dona"
+}

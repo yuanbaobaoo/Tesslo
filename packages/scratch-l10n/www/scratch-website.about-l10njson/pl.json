@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Scratch jest największą na świecie społecznością zajmującą się programowaniem dla dzieci i prostym w użyciu językiem programowania, który pozwala dzieciom tworzyć wirtualne historie, gry i animacje. Scratch jest zaprojektowany, opracowany i moderowany przez {foundationLink}, organizację non-profit.",
+    "about.introTwo": "Scratch promuje myślenie obliczeniowe i umiejętności rozwiązywania problemów; twórczą naukę; wyrażanie siebie i współpracę; i równość w informatyce.",
+    "about.introThree": "Scratch jest zawsze darmowy i dostępny w ponad 70 językach.",
+    "about.foundationText": "Fundacja Scratcha",
+    "about.introParents": "Informacje dla rodziców",
+    "about.introEducators": "Informacje dla nauczycieli",
+    "about.introLearnMore": "Learn more at Scratch Foundation",
+    "about.support": "Support Scratch",
+    "about.supportDescription1": "Scratch is available for free, thanks to our {supportersLink}. This support helps us provide young people around the world with opportunities to imagine, create, and share.",
+    "about.supportDescription2": "Every dollar donated gives one child access to free, playful, and powerful creative learning through the Scratch community.",
+    "about.supportDescription3": "Join us in helping kids everywhere create what they imagine.",
+    "about.supportersLinkText": "supporters",
+    "about.donateButton": "Przekaż darowiznę"
+}

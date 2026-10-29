@@ -7,14 +7,15 @@ They cannot verify WebGL or Bluetooth: the HarmonyOS 7 emulator images have no W
 
 - HarmonyOS 7 device with developer mode and USB debugging enabled.
 - `hdc list targets` shows the device serial.
-- HarmonyOS SDK 26 command line tools and JDK 21 available (see `scripts/build-hap.sh`).
+- HarmonyOS SDK 26 command line tools and JDK 21 available; `scripts/ohos-common.mjs`
+  auto-detects `OHOS_COMMAND_LINE_TOOLS_ROOT`, `~/command-line-tools`, or `hvigorw` on PATH.
 
-Signing is device/account bound. If the local `ohos/hap-template/build-profile.json5` was generated against an emulator, remove it and regenerate with the device connected:
+Signing is device/account bound. If the local `apps/ohos/build-profile.json5` was generated against an emulator, remove it and regenerate:
 
 ```sh
-rm -f ohos/hap-template/build-profile.json5
+rm -f apps/ohos/build-profile.json5
 hdc list targets          # confirm the physical device is the only target
-bash scripts/build-hap.sh # regenerates signing material, builds and signs
+pnpm dev:ohos -- --device <serial>  # builds signed HAP, installs, launches, collects evidence
 ```
 
 `build-profile.json5` is gitignored; never commit it or files under `~/.ohos/config`.
@@ -22,12 +23,13 @@ bash scripts/build-hap.sh # regenerates signing material, builds and signs
 ## 2. Build and install
 
 ```sh
-make hap
-make verify TARGET=<device-serial>
+pnpm build:hap                         # unsigned HAP
+pnpm build:hap -- --signed             # signed HAP
+pnpm dev:ohos -- --device <serial>     # signed build + install + launch + evidence
 ```
 
-`make verify` installs the HAP, launches Tesslo, waits for startup, and writes
-`build/verify/tesslo-main.log` plus `build/verify/tesslo-verify.jpeg`.
+`dev:ohos` installs the HAP, launches Tesslo, waits for startup, and writes
+`build/verify/<serial>-tesslo-main.log` plus `build/verify/<serial>-tesslo.jpeg`.
 Accept the clipboard and Bluetooth permission prompts on the device when they appear.
 
 ## 3. Pass criteria

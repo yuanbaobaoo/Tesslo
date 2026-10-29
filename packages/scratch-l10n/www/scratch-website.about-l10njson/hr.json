@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Scratch je najveća svjetska zajednica kodiranja za djecu i jezik kodiranja s jednostavnim vizualnim sučeljem koje mladima omogućuje stvaranje digitalnih priča, igara i animacija. Scratch je osmislila, razvila i moderirala {foundationLink}, neprofitna organizacija.",
+    "about.introTwo": "Scratch promiče računalno razmišljanje i vještine rješavanja problema; kreativno poučavanje i učenje; samoizražavanje i suradnja; i jednakost u računalstvu.",
+    "about.introThree": "Scratch je uvijek besplatan i dostupan je na više od 70 jezika.",
+    "about.foundationText": "Scratch Zaklada",
+    "about.introParents": "Informacije za roditelje",
+    "about.introEducators": "Informacije za učitelje",
+    "about.introLearnMore": "Learn more at Scratch Foundation",
+    "about.support": "Support Scratch",
+    "about.supportDescription1": "Scratch is available for free, thanks to our {supportersLink}. This support helps us provide young people around the world with opportunities to imagine, create, and share.",
+    "about.supportDescription2": "Every dollar donated gives one child access to free, playful, and powerful creative learning through the Scratch community.",
+    "about.supportDescription3": "Join us in helping kids everywhere create what they imagine.",
+    "about.supportersLinkText": "supporters",
+    "about.donateButton": "Doniraj"
+}

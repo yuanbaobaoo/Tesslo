@@ -1,0 +1,6 @@
+{
+  "types": "./index.d.ts",
+  "name": "libtesslolink.so",
+  "description": "Tesslo Link C# NAPI bridge",
+  "version": "1.0.0"
+}

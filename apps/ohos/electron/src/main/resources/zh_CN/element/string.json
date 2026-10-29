@@ -1,0 +1,44 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "模块描述"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "Tesslo"
+    },
+    {
+      "name": "button_ok",
+      "value": "确认"
+    },
+    {
+      "name": "button_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "OpenNewWindow_label",
+      "value": "打开新窗口"
+    },
+    {
+      "name": "read_write_user_file",
+      "value": "访问用户主目录以存储会话数据并使用 zsh 环境"
+    },
+    {
+      "name": "access_bluetooth",
+      "value": "连接 micro:bit 等蓝牙设备"
+    },
+    {
+      "name": "camera_reason",
+      "value": "用于视频侦测的摄像头访问"
+    },
+    {
+      "name": "microphone_reason",
+      "value": "用于录音和声音侦测的麦克风访问"
+    }
+  ]
+}

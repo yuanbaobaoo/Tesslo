@@ -1,0 +1,25 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+
+nodeLinker: isolated
+shamefullyHoist: true
+linkWorkspacePackages: true
+preferWorkspacePackages: true
+strictPeerDependencies: false
+autoInstallPeers: true
+strictStorePkgContentCheck: false
+
+overrides:
+  upath: 1.2.0
+
+allowBuilds:
+  canvas: false
+  core-js: false
+  electron: true
+  electron-winstaller: false
+  esbuild: true
+  fsevents: false
+  husky: false
+  playwright-chromium: false
+  unrs-resolver: false

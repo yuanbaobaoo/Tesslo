@@ -9,7 +9,7 @@
     "test": "node --test ./test/*.test.js"
   },
   "dependencies": {
-    "@tesslo/scratch-link-ohos": "*",
+    "@tesslo/link": "workspace:*",
     "ws": "^8.22.0"
   }
 }

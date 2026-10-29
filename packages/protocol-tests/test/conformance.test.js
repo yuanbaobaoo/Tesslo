@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import WebSocket from 'ws';
 
-import {startScratchLinkServer} from '@tesslo/scratch-link-ohos';
+import {startScratchLinkServer} from '@tesslo/link';
 
 const connect = url => new Promise((resolve, reject) => {
     const socket = new WebSocket(url);

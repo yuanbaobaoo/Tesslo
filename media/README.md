@@ -13,28 +13,24 @@ China.
 - Record the source and checksum of the mirror in `media/manifest.json`.
 - Verify asset licenses before redistribution.
 
-## Planned layout
+## Layout
 
 ```text
 media/
-├── manifest.json     # asset host, counts, checksums
-└── fetch.mjs         # downloads into scratch-desktop/static/fetched
+├── manifest.json     # source, file count, byte count
+└── fetched/          # local offline assets (gitignored)
 ```
 
 ## Status
 
-Implemented using the upstream fetcher:
-
-```sh
-cd upstream/scratch-desktop
-npm run fetch     # writes static/fetched
-```
-
-- 1328 files, ~58 MB; every one of the 2679 library items resolves to a file.
-- `build-desktop.sh` copies `static/fetched` into `build/desktop/static`, and
-  `build-hap.sh` packages it into the HAP.
-- Assets stay out of git (`static/fetched` is ignored); rebuilds fetch them again
-  or reuse a cache.
+- `media/fetched` currently holds 1328 files (~57 MB); `media/manifest.json`
+  records the count and total bytes.
+- `pnpm build:hap` stages `media/fetched` into the HAP app payload as
+  `static/fetched`.
+- `apps/desktop/static/fetched` is a local symlink to `media/fetched` for
+  desktop development.
+- Assets stay out of git; copy or fetch them into `media/fetched` before an
+  offline build.
 
 ## Licensing
 

@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Το Scratch είναι η μεγαλύτερη κοινότητα προγραμματισμού για παιδιά στον κόσμο και μια γλώσσα προγραμματισμού με απλό οπτικό περιβάλλον που επιτρέπει στους νέους να δημιουργούν ψηφιακές ιστορίες, παιχνίδια και κινούμενα σχέδια. Το Scratch σχεδιάζεται, αναπτύσσεται και συντονίζεται από το {foundationLink}, έναν μη κερδοσκοπικό οργανισμό.",
+    "about.introTwo": "Το Scratch προωθεί την υπολογιστική σκέψη και τις δεξιότητες επίλυσης προβλημάτων, τη δημιουργική διδασκαλία και μάθηση, την αυτοέκφραση και τη συνεργασία και την ισότητα στην πληροφορική.",
+    "about.introThree": "Το Scratch είναι πάντα δωρεάν και διατίθεται σε περισσότερες από 70 γλώσσες.",
+    "about.foundationText": "Ίδρυμα Scratch",
+    "about.introParents": "Πληροφορίες για γονείς",
+    "about.introEducators": "Πληροφορίες για εκπαιδευτικούς",
+    "about.introLearnMore": "Learn more at Scratch Foundation",
+    "about.support": "Support Scratch",
+    "about.supportDescription1": "Scratch is available for free, thanks to our {supportersLink}. This support helps us provide young people around the world with opportunities to imagine, create, and share.",
+    "about.supportDescription2": "Every dollar donated gives one child access to free, playful, and powerful creative learning through the Scratch community.",
+    "about.supportDescription3": "Join us in helping kids everywhere create what they imagine.",
+    "about.supportersLinkText": "supporters",
+    "about.donateButton": "Κάντε δωρεά"
+}

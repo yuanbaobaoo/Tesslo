@@ -68,24 +68,24 @@ HarmonyOS 7 HAP
 
 ## 当前状态
 
-**Early / PoC**。桌面链路已跑通；HAP 能在 HarmonyOS 7 上构建、签名、安装、启动并加载 Scratch 界面，模拟器没有 WebGL，舞台/画笔仍需真机验证。
+**源码级 monorepo 已跑通**：Scratch 编辑器源码已进仓，`pnpm build` 从仓库内源码构建 GUI 与桌面 `dist`；`apps/ohos` 最小 HAP 宿主已在真机跑通。C# 版 Link server 已完成主机协议测试和 OHOS arm64 交叉编译，下一步接 NAPI。
 
-- [x] 架构与上游依赖梳理
-- [x] 仓库骨架 / 上游锁定 / 补丁序列（0001-0008 从干净上游重放并编译、冒烟通过）
-- [x] Scratch Link OHOS 协议服务原型（fake BLE + 5 个协议测试通过）
-- [x] Scratch Link 内置 HAP 主进程，设备内 `127.0.0.1:20111` 全协议链路已验证
-- [x] ArkTS BLE 桥（权限、扫描、连接、GATT 读写、通知）接入 Scratch Link
-- [ ] Scratch Link 真机 BLE（模拟器无蓝牙硬件，需 micro:bit/WeDo 实测）
-- [x] 离线素材库（1328 个资源，2679 个库项全部可解析）
-- [x] Electron 40 + `scratch-desktop` 桌面构建与冒烟（中文界面、积木区、舞台 canvas）
-- [x] HarmonyOS 7 HAP 构建、签名、安装、启动（API 26 模拟器，380MB，已去除 zcode 残留与 source map）
-- [x] Scratch GUI 在 HAP 内完整渲染（7.0 平板与 2in1，ANGLE GL）
-- [x] 设备内 VM 项目加载/导出（loadProject + saveProjectSb3）
-- [x] WebGL/舞台在真机（HAD-W32，HarmonyOS 7.0）上可用；模拟器自动切 ANGLE 显示 UI
+- [x] 源码进仓：GUI / VM / render / svg-renderer / paint / storage / audio / blocks / l10n / fonts / parser / sb1 / task-herder
+- [x] pnpm workspace + 源码构建 GUI / desktop dist
+- [x] Scratch Link OHOS 协议服务（9 个测试通过）
+- [x] ArkTS BLE 桥（权限、扫描、连接、GATT 读写、通知）
+- [x] 最小 HAP 宿主 `apps/ohos` + unsigned HAP
+- [x] C# Link server：主机 `getVersion`/`discover` 通过，OHOS arm64 交叉编译通过
+- [x] C# Link NAPI 桥接入 HAP；真机 20111 `getVersion`/`discover` 通过，Electron 主进程跳过 TS Link
+- [x] C# → ArkTS BLE TCP 桥：真机扫描到 43–75 个 BLE 设备
+- [x] GATT 桥代码：connect/getServices/read/write/start-stopNotifications
+- [ ] micro:bit/WeDo 真机 GATT 回归
+- [ ] BT Classic（EV3）+ 协议状态机 parity
+- [ ] CI + AppGallery / AGPL / 素材合规
 - [ ] Scratch Link 真机 BLE
-- [ ] 离线素材库
-- [x] 文件保存对话框在 7.0 上拉起（系统选择器需真人确认落盘）
 - [ ] 文件打开/保存真机完整验证
+- [x] 离线素材库（1328 资源，2679 库项可解析；作为外部资产维护）
+- [x] WebGL/舞台真机可用（apps/ohos 最小宿主，HAD-W32）
 
 ### WebGL：真机已通过，模拟器不支持
 
@@ -101,28 +101,62 @@ HarmonyOS 7 HAP
 
 详细记录见 `docs/status.md`；真机签名、安装、WebGL/BLE/文件验证步骤见 `docs/device-testing.md`。
 
+## 源码与版本
+
+- 编辑器源码已进仓：`packages/scratch-gui`、`scratch-vm`、`scratch-render`、`scratch-svg-renderer`、`scratch-paint`、`scratch-storage`、`scratch-audio`、`scratch-blocks`、`scratch-l10n`、`scratch-render-fonts`、`scratch-parser`、`scratch-sb1-converter`、`task-herder`。
+- 桌面壳源码在 `apps/desktop`；Scratch Link 的 C# 上游参考在 `vendor/scratch-link-csharp`。
+- 每个包的来源、tag、commit 记录在 `vendor/upstream.lock.json`。**构建期不 clone、不访问上游 Git。**
+- 产品版本由根 `package.json` 和 `apps/desktop` 维护；内部包保留上游版本，以保证 workspace 依赖能精确链接。
+- 基线版本是 Scratch 官方桌面版 3.32.0 锁定的 `@scratch/scratch-gui@13.7.4-svg`。`-svg` 是上游发布标签的一部分，不是笔误，也不是另一条版本线。
+
 ## 仓库结构
 
 ```text
-tesslo-ohos/
-├── upstream/          # 上游源码（sync 脚本拉取，不提交）
-├── patches/           # 平台补丁序列
-├── packages/          # scratch-link-ohos / protocol-tests / shared
-├── ohos/              # HAP 模板 / BLE 桥 / 签名模板
-├── media/             # 素材镜像清单与抓取脚本
-├── tests/             # .sb3 金标准 / e2e
-├── docs/              # 架构、上游矩阵、ADR
-└── ci/                # sync / build / test / release
+tesslo/
+├── apps/
+│   ├── desktop/      # scratch-desktop 源码（Electron 壳）
+│   └── ohos/         # 最小 HAP 宿主（厂商 runtime sample + Tesslo web_engine）
+├── packages/         # 进仓的 Scratch 源码 + link + protocol-tests
+├── vendor/
+│   ├── upstream.lock.json
+│   ├── electron-ohos.lock.json   # .so 只记录版本/校验和/下载地址，不进 git
+│   ├── scratch-link-csharp/      # C# 只读参考
+│   ├── ohos-net.lock.json        # OHOS NativeAOT 工具链/runtime 锁
+│   ├── ohos-net/                 # C#/NativeAOT runtime + toolchain + hello
+│   └── cache/                    # 本地运行库缓存（gitignore）
+├── media/            # 素材缓存（marker: media/fetched，1328 文件；gitignore）
+├── docs/             # 架构、状态、真机、上游矩阵、ADR、C# 调研
+└── scripts/          # Node 入口：build-hap / dev-ohos / build-link-csharp / vendor / ohos-common
 ```
 
 ## 快速开始
 
 ```bash
-make sync      # 按 upstream.lock.json 拉取上游
-make patch     # 应用 patches/series
-make build     # 构建 desktop
-make test      # Scratch Link 协议测试
+pnpm install
+pnpm build          # 从仓库内源码构建 GUI + 桌面 dist
+pnpm build:link:csharp  # .NET 9 + OHOS SDK，构建 C# Link + NAPI 桥并部署到 apps/ohos
+pnpm build:hap     # 未签名 HAP（需要先 build:link:csharp）
+pnpm test           # Scratch Link 协议测试
 ```
+
+单步构建：
+
+```bash
+pnpm build:gui
+pnpm build:desktop
+pnpm build:link
+```
+
+HAP：
+
+```bash
+pnpm build:hap                     # 未签名 HAP -> build/ohos 输出目录
+pnpm build:hap -- --signed         # 带本机签名材料
+pnpm dev:ohos -- --device <serial> # 签名、装机、启动，并抓主进程日志/截图
+```
+
+`.so` 只从本地 runtime 缓存读取，不提交 git。`dev:ohos` 会调用 `hdc install` 和
+`aa start`，证据写到 `build/verify/`。
 
 ## 参与
 

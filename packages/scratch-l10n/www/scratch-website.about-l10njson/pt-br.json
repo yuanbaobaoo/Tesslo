@@ -1,0 +1,15 @@
+{
+    "about.introOne": "O Scratch é a maior comunidade do mundo de programação para crianças e uma linguagem de programação com uma interface visual simples que permite que os jovens criem histórias, jogos e animações digitais. O Scratch é projetado, desenvolvido e moderado pela {foundationLink}, uma organização sem fins lucrativos.",
+    "about.introTwo": "O Scratch promove o pensamento computacional e habilidades de resolução de problemas; ensino e aprendizagem criativos; autoexpressão e colaboração; e equidade em computação.",
+    "about.introThree": "O Scratch sempre será gratuito e está disponível em mais de 70 idiomas.",
+    "about.foundationText": "Fundação Scratch ",
+    "about.introParents": "Informações para pais ou responsáveis",
+    "about.introEducators": "Informação para educadores",
+    "about.introLearnMore": "Saiba mais em Fundação Scratch",
+    "about.support": "Apoie o Scratch",
+    "about.supportDescription1": "O Scratch está disponível gratuitamente graças aos nossos {supportersLink}. Esse apoio nos ajuda a prover oportunidades de imaginar, criar e compartilhar para jovens de todo o mundo.",
+    "about.supportDescription2": "Cada doação permite que crianças tenha acesso a aprendizagem criativa de forma gratuito e lúdica através da comunidade Scratch.",
+    "about.supportDescription3": "Junte-se a nós e ajude crianças de todos os lugares a criarem o que elas imaginam.",
+    "about.supportersLinkText": "apoiadores",
+    "about.donateButton": "Fazer Doação"
+}

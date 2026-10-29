@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Scratch, çocuklar için dünyanın en büyük kodlama topluluğudur ve gençlerin dijital hikayeler, oyunlar ve animasyonlar oluşturmasına olanak tanıyan basit bir görsel ara yüze sahip bir kodlama dilidir. Scratch, kar amacı gütmeyen bir kuruluş olan {foundationLink} tarafından tasarlandı, geliştirildi ve yönetiliyor.",
+    "about.introTwo": "Scratch, bilgi işlemsel düşünme ve problem çözme becerilerini destekler; yaratıcı öğretim ve öğrenim; kendini ifade etme ve işbirliği; ve bilgi işlemde eşitlik.",
+    "about.introThree": "Scratch her zaman ücretsiz olacak ve 70'den fazla dilde mevcut.",
+    "about.foundationText": "Scratch Vakfı",
+    "about.introParents": "Ebeveynler için bilgi",
+    "about.introEducators": "Eğitimciler için bilgi",
+    "about.introLearnMore": "Scratch Vakfı'nda daha fazla bilgi edinin",
+    "about.support": "Scratch'i Destekleyin",
+    "about.supportDescription1": "Scratch, {supportersLink} sayesinde ücretsiz olarak sunulmaktadır. Bu destek, dünyanın dört bir yanındaki gençlere hayal etme, yaratma ve paylaşma fırsatları sunmamıza yardımcı olur.",
+    "about.supportDescription2": "Bağışlanan her dolar, bir çocuğun Scratch topluluğu aracılığıyla ücretsiz, eğlenceli ve güçlü yaratıcı öğrenmeye erişmesini sağlar.",
+    "about.supportDescription3": "Hayal ettiklerini yaratmaları için dünyanın dört bir yanındaki çocuklara yardım etme misyonumuza katılın.",
+    "about.supportersLinkText": "Destekçiler",
+    "about.donateButton": "Bağış"
+}

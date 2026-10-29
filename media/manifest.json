@@ -1,0 +1,6 @@
+{
+  "source": "scratch-desktop fetchMediaLibraryAssets (mirror cache)",
+  "files": 1328,
+  "bytes": 56819338,
+  "note": "Fetched assets are not committed; place them here before an offline build."
+}

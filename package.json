@@ -1,17 +1,32 @@
 {
-  "name": "tesslo-ohos",
+  "name": "tesslo",
   "version": "0.1.0",
   "private": true,
-  "description": "Tesslo (拼格工坊) - an unofficial, Scratch-compatible block editor for HarmonyOS 7",
+  "description": "Tesslo - an unofficial, Scratch-compatible block editor for HarmonyOS 7",
   "license": "AGPL-3.0-only",
-  "workspaces": [
-    "packages/*"
-  ],
+  "packageManager": "pnpm@11.21.0",
   "scripts": {
-    "sync": "bash scripts/sync-upstream.sh",
-    "patch": "bash scripts/apply-patches.sh",
-    "build:desktop": "bash scripts/build-desktop.sh",
-    "test": "node --test packages/scratch-link-ohos/test/*.test.js packages/protocol-tests/test/*.test.js"
+    "build": "pnpm build:editor && pnpm build:desktop",
+    "build:editor": "pnpm build:task-herder && pnpm build:sb1 && pnpm build:blocks && pnpm build:storage && pnpm build:svg-renderer && pnpm build:render && pnpm build:vm && pnpm build:audio && pnpm build:l10n && pnpm build:paint && pnpm build:gui",
+    "build:task-herder": "pnpm --filter @scratch/task-herder run build",
+    "build:sb1": "pnpm --filter scratch-sb1-converter build",
+    "build:blocks": "pnpm --filter scratch-blocks build",
+    "build:storage": "pnpm --filter scratch-storage build",
+    "build:svg-renderer": "pnpm --filter @scratch/scratch-svg-renderer exec webpack",
+    "build:render": "pnpm --filter @scratch/scratch-render exec webpack",
+    "build:vm": "pnpm --filter @scratch/scratch-vm exec webpack",
+    "build:audio": "pnpm --filter scratch-audio build",
+    "build:l10n": "pnpm --filter scratch-l10n build",
+    "build:paint": "pnpm --filter scratch-paint build",
+    "build:gui": "pnpm --filter @scratch/scratch-gui run clean && pnpm --filter @scratch/scratch-gui run build:dist",
+    "build:desktop": "NODE_ENV=production pnpm --filter scratch-desktop compile",
+    "build:link": "pnpm --filter @tesslo/link build",
+    "build:link:csharp": "node scripts/build-link-csharp.mjs",
+    "build:hap": "node scripts/build-hap.mjs",
+    "dev:ohos": "node scripts/dev-ohos.mjs",
+    "vendor": "node scripts/vendor.mjs",
+    "test": "pnpm test:link",
+    "test:link": "node --test packages/link/test/*.test.js packages/protocol-tests/test/*.test.js"
   },
   "engines": {
     "node": ">=20"

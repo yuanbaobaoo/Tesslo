@@ -8,22 +8,39 @@ build-output/
 static/fetched/
 packages/*/node_modules/
 packages/*/dist/
+packages/*/build/
+packages/*/playground/
+packages/*/locales/
+packages/*/types/
+packages/*/dist.js
+apps/*/dist/
+vendor/cache/
 *.hap
 *.app
-ohos/signing/*.p12
-ohos/signing/*.cer
-ohos/signing/*.p7b
-ohos/signing/*.csr
-ohos/signing/*.local.json
 signing.*.local.json
-ohos/hap-template/.hvigor/
-ohos/hap-template/**/build/
-ohos/hap-template/oh_modules/
-ohos/hap-template/**/oh_modules/
-ohos/hap-template/electron/libs/
-ohos/hap-template/web_engine/src/main/resources/resfile/
-ohos/hap-template/electron/src/main/resources/resfile/
-ohos/hap-template/AppScope/resources/base/media/*.png
 
 # Device-bound signing configs and generated HAP project file
-ohos/hap-template/build-profile.json5
+
+media/fetched/
+apps/desktop/static/fetched
+
+# Local C#/NativeAOT build outputs
+vendor/ohos-net/runtime/runtime.linux-musl-*/
+vendor/ohos-net/samples/**/bin/
+vendor/ohos-net/samples/**/obj/
+packages/link/dotnet/**/bin/
+packages/link/dotnet/**/obj/
+
+# apps/ohos generated runtime and build output
+apps/ohos/electron/libs/
+apps/ohos/electron/oh_modules/
+apps/ohos/web_engine/oh_modules/
+apps/ohos/oh_modules/
+apps/ohos/**/build/
+apps/ohos/.hvigor/
+apps/ohos/build-profile.json5
+apps/ohos/web_engine/src/main/resources/resfile/
+packages/link/dotnet/napi/*.so
+
+vendor/ohos-net/**/bin/
+vendor/ohos-net/**/obj/

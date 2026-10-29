@@ -1,0 +1,10 @@
+# transifex
+/.tx
+# dotfiles
+.babelrc
+.eslint*
+.github
+.jshintrc
+.npmignore
+.travis.yml
+webpack.config.js

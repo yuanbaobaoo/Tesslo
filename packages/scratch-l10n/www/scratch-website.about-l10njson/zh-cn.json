@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Scratch是世界上最大的儿童编程社区，也是一种拥有简洁编辑环境的编程语言，你可以编写故事，游戏和动画。Scratch由一个非营利组织{foundationLink}设计并开发。",
+    "about.introTwo": "Scratch促进孩子的计算思维，解决问题能力，创意教学，自我表达，合作，和计算机领域中的平等。",
+    "about.introThree": "Scratch 支持 70 多种语言并永久免费。",
+    "about.foundationText": "Scratch 基金会",
+    "about.introParents": "致家长",
+    "about.introEducators": "致教师",
+    "about.introLearnMore": "進一步瞭解 Scratch 基金會",
+    "about.support": "支持 Scratch",
+    "about.supportDescription1": "Scratch 能夠免費，需感謝來自 {supportersLink} 的支持，這些支持幫助了我們為全球兒童提供了一個能思考、創造、分享的園地。",
+    "about.supportDescription2": "每份捐款都能讓孩子在 Scratch 社群裡獲得免費、有趣的創意學習機會。",
+    "about.supportDescription3": "加入我們，讓世界各地的孩子都能盡情揮灑自己的色彩。",
+    "about.supportersLinkText": "支持者",
+    "about.donateButton": "捐助"
+}

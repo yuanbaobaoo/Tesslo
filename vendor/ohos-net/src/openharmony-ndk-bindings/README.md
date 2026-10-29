@@ -1,0 +1,1 @@
+## OpenHarmony NDK 绑定库 基于api level 13
