@@ -17,6 +17,7 @@ const argv = process.argv.slice(2);
 const args = new Set(argv);
 const deviceIndex = argv.indexOf('--device');
 const requestedDevice = deviceIndex !== -1 ? argv[deviceIndex + 1] : undefined;
+const bleSim = args.has('--ble-sim');
 
 const evidenceDir = path.join(repoRoot, 'build/verify');
 fs.mkdirSync(evidenceDir, {recursive: true});
@@ -76,9 +77,9 @@ try {
         } catch {
             // log may not exist yet
         }
-        run(toolchain.hdc, ['-t', serial, 'shell', 'aa', 'start', '-a', abilityName, '-b', bundleName], {
-            stdio: 'ignore'
-        });
+        const startArgs = ['-t', serial, 'shell', 'aa', 'start', '-a', abilityName, '-b', bundleName];
+        if (bleSim) startArgs.push('--ps', 'tessloBleSim', 'true');
+        run(toolchain.hdc, startArgs, {stdio: 'ignore'});
 
         console.log('[dev:ohos] waiting for startup; accept permission prompts on the device');
         await new Promise(resolve => setTimeout(resolve, 15000));

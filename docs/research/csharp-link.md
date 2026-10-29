@@ -75,8 +75,8 @@ maximum C# reuse without reimplementing the Bluetooth stack.
 - BLE scan is now real: `web_engine/src/main/ets/ble/BleTcpBridge.ets` exposes
   `@ohos.bluetooth.ble` over `127.0.0.1:20113`; C# `discover` connected, scanned,
   and received 43–75 devices on the real device. GATT connect/getServices/read/
-  write/notifications are implemented and compiled; hardware regression and BT
-  Classic remain.
+  write/notifications are implemented; simulated micro:bit and WeDo peripherals
+  pass the full flow. Hardware regression and BT Classic remain.
 
 ## Spike plan
 

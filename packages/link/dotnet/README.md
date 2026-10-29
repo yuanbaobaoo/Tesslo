@@ -25,6 +25,14 @@ Runtime on device:
 - BLE scan is real; GATT connect/getServices/read/write/notifications are
   implemented over the ArkTS bridge.
 
+Simulated test (no hardware):
+
+```bash
+pnpm dev:ohos -- --ble-sim --device <serial>
+pnpm test:ble -- --device microbit
+pnpm test:ble -- --device wedo
+```
+
 Hardware test:
 
 ```bash

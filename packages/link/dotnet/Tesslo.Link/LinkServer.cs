@@ -186,10 +186,11 @@ public sealed class LinkServer : IDisposable
                     break;
                 case "connect":
                 {
-                    var deviceId = Param(root, "deviceId");
+                    var deviceId = Param(root, "peripheralId");
+                    if (deviceId.Length == 0) deviceId = Param(root, "deviceId");
                     if (deviceId.Length == 0)
                     {
-                        WriteError(stream, id, -32602, "connect requires deviceId");
+                        WriteError(stream, id, -32602, "connect requires peripheralId");
                         break;
                     }
                     if (_bleBridge.Connect(deviceId, out var connectError))

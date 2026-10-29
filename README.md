@@ -18,6 +18,7 @@ pnpm test                  # Scratch Link 协议测试
 
 ```bash
 pnpm dev:ohos -- --device <serial>
+pnpm dev:ohos -- --ble-sim --device <serial>  # 模拟 micro:bit/WeDo
 ```
 
 可选 BLE 设备测试：
@@ -41,7 +42,7 @@ scripts/          build-hap / dev-ohos / build-link-csharp / test-ble / vendor
 
 ## 状态
 
-已完成：源码级构建、最小 HAP 宿主、C# Link（NAPI + 真机 20111）、真实 BLE 扫描、GATT 桥代码。
+已完成：源码级构建、最小 HAP 宿主、C# Link（NAPI + 真机 20111）、真实 BLE 扫描、GATT 桥、micro:bit/WeDo 模拟设备验证。
 
 待完成：micro:bit/WeDo 真机 GATT 回归、BT Classic、CI、离线 HAP 物料、上架合规。
 

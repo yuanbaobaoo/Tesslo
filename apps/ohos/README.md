@@ -16,4 +16,5 @@ pnpm build
 pnpm build:link:csharp
 pnpm build:hap
 pnpm dev:ohos -- --device <serial>
+pnpm dev:ohos -- --ble-sim --device <serial>  # simulated micro:bit/WeDo
 ```

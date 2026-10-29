@@ -6,6 +6,7 @@ import window from '@ohos.window';
 import Want from '@ohos.app.ability.Want';
 import AbilityConstant from '@ohos.app.ability.AbilityConstant';
 import { Configuration } from '@ohos.app.ability.Configuration';
+import { deviceInfo } from '@kit.BasicServicesKit';
 
 import { WebAbility, startTessloBleBridge } from 'web_engine';
 import * as tesslolink from 'libtesslolink.so';
@@ -17,7 +18,9 @@ export default class EntryAbility extends WebAbility {
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam) {
     super.onCreate(want, launchParam);
-    startTessloBleBridge(20113).catch((error: Error) => {
+    const wantSim = want.parameters?.['tessloBleSim'];
+    const simulate = deviceInfo.productModel === 'emulator' || wantSim === 'true' || wantSim === true;
+    startTessloBleBridge(20113, simulate).catch((error: Error) => {
       console.error(`tesslo BLE bridge start failed: ${error.message}`);
     });
     try {

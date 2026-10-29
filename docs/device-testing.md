@@ -62,9 +62,33 @@ hdc -t <serial> fport tcp:20111 tcp:20111
 node -e 'const W=require("ws");const w=new W("ws://127.0.0.1:20111/scratch/ble");w.on("open",()=>w.send(JSON.stringify({jsonrpc:"2.0",id:1,method:"getVersion"})));w.on("message",m=>{console.log(m.toString());w.close()})'
 ```
 
-### micro:bit / WeDo
+### Simulated micro:bit / WeDo
 
-Use the dedicated protocol test script instead of the UI:
+When no hardware is available, launch the HAP with the simulator (also enabled
+automatically on emulator images):
+
+```sh
+pnpm dev:ohos -- --ble-sim --device <serial>
+```
+
+The ArkTS BLE bridge then advertises two virtual peripherals:
+
+- `BBC micro:bit [tesslo]` — service `0000f005-...`, RX/TX characteristics.
+- `LEGO WeDo 2.0 [tesslo]` — `00001523-...` + `00004f0e-...` services.
+
+Run the protocol harness against it:
+
+```sh
+pnpm test:ble -- --device microbit --serial <serial>
+pnpm test:ble -- --device wedo --serial <serial>
+```
+
+Verified simulated result: both devices pass discover → connect → getServices →
+notify/read/write.
+
+### Real micro:bit / WeDo
+
+Use the same script without `--ble-sim`, with real hardware advertising:
 
 ```sh
 pnpm test:ble -- --device microbit --serial <serial>

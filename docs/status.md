@@ -32,6 +32,8 @@ Last updated: 2026-10-29
   observed.
 - GATT connect/getServices/read/write/start-stopNotifications are implemented
   over the same bridge.
+- Simulated `BBC micro:bit [tesslo]` and `LEGO WeDo 2.0 [tesslo]` peripherals
+  pass discover → connect → getServices → notify/read/write end-to-end.
 
 ## Pending
 
