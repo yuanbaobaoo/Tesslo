@@ -1,62 +1,87 @@
-// Copyright (c) 2024 Huawei Device Co., Ltd. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+import { webview } from '@kit.ArkWeb';
+import { BusinessError } from '@kit.BasicServicesKit';
+import fs from '@ohos.file.fs';
 
-import { WebWindow } from 'web_engine';
-import CustomChildProcess from '../process/CustomChildProcess';
-import { KeyCode } from '@kit.InputKit';
-import LogUtil from 'web_engine/src/main/ets/utils/LogUtil';
-import { uiObserver } from '@kit.ArkUI';
-import { NativeContext } from 'web_engine/src/main/ets/interface/CommonInterface';
-import JsBindingUtils from 'web_engine/src/main/ets/utils/JsBindingUtils';
-import { ContextType } from 'web_engine/src/main/ets/common/Constants';
- 
-const TAG: string = 'Index';
+import { log } from '../common/AppLog';
 
-CustomChildProcess.toString();
-let storage = LocalStorage.getShared();
-@Entry(storage)
+const WEBGL_PROBE = `(() => {
+  const canvas = document.createElement('canvas');
+  const gl2 = canvas.getContext('webgl2');
+  const gl = gl2 || canvas.getContext('webgl');
+  return JSON.stringify({
+    webgl: !!gl,
+    webgl2: !!gl2,
+    renderer: gl ? gl.getParameter(gl.RENDERER) : null,
+    vendor: gl ? gl.getParameter(gl.VENDOR) : null
+  });
+})()`;
+
+@Entry
 @Component
 struct Index {
-  @LocalStorageLink('xcomponentId') xComponentId: string = '';
-  @LocalStorageProp('statusBarHeight') statusBarHeight: number = 0;
-  @State density: number = 0;
-  private nativeContext: NativeContext =
-    JsBindingUtils.getNativeContext(ContextType.kMainProcess);
- 
-  aboutToAppear(): void {
-    uiObserver.on('densityUpdate', this.getUIContext(), (info: uiObserver.DensityInfo) => {
-      this.density = info.density;
+  private controller: webview.WebviewController = new webview.WebviewController();
+
+  private registerDownloadDelegate(): void {
+    const delegate: webview.WebDownloadDelegate = new webview.WebDownloadDelegate();
+    delegate.onBeforeDownload((item: webview.WebDownloadItem) => {
+      const suggested: string = item.getSuggestedFileName() || 'tesslo.sb3';
+      const name: string = suggested.replace(/[\\/:*?"<>|]/g, '_');
+      const dir: string = `${getContext(this).filesDir}/Download`;
+      const target: string = `${dir}/${name}`;
+      try {
+        fs.mkdirSync(dir, true);
+        item.start(target);
+        log(`download start ${target}`);
+      } catch (error) {
+        log(`download failed: ${error.message}`);
+        item.cancel();
+      }
     });
-  }
- 
-  aboutToDisappear(): void {
-    uiObserver.off('densityUpdate', this.getUIContext());
+    delegate.onDownloadFinish((item: webview.WebDownloadItem) => {
+      log(`download finish ${item.getUrl()}`);
+    });
+    delegate.onDownloadFailed((item: webview.WebDownloadItem) => {
+      log(`download failed ${item.getUrl()} code=${item.getLastErrorCode()}`);
+    });
+    this.controller.setDownloadDelegate(delegate);
   }
 
-  onBackPress(): boolean {
-    this.nativeContext.OnBackToLastPage(this.xComponentId);
-    return true;
-  }
-  
   build() {
-    Row() {
-      WebWindow()
-    }.onKeyEvent((event?: KeyEvent) => {
-      if (event) {
-        if (event.type == KeyType.Down && event.keyCode == KeyCode.KEYCODE_ESCAPE) {
-          event.stopPropagation();
-        }
-      }
-    })
+    Column() {
+      Web({src: $rawfile('index.html'), controller: this.controller})
+        .onControllerAttached(() => this.registerDownloadDelegate())
+        .javaScriptAccess(true)
+        .domStorageAccess(true)
+        .fileAccess(true)
+        .imageAccess(true)
+        .onlineImageAccess(true)
+        .mixedMode(MixedMode.All)
+        .darkMode(WebDarkMode.Auto)
+        .onPageBegin(() => log('page begin'))
+        .onPageEnd(() => {
+          log('page end');
+          this.controller.runJavaScript(WEBGL_PROBE, (error: BusinessError, result: string) => {
+            if (error) {
+              log(`webgl probe failed: ${error.message}`);
+            } else {
+              log(`webgl probe ${result}`);
+            }
+          });
+        })
+        .onConsole((event) => {
+          const message: string = event?.message?.getMessage() ?? '';
+          if (message.toLowerCase().includes('error')) {
+            log(`console ${message}`);
+          }
+          return false;
+        })
+        .onErrorReceive((event) => {
+          log(`web error ${event?.error?.getErrorInfo() ?? 'unknown'}`);
+        })
+        .width('100%')
+        .height('100%')
+    }
     .width('100%')
     .height('100%')
-    .padding({
-      top: this.getStatusBarHeight(),
-    })
-  }
-  getStatusBarHeight(): number {
-    LogUtil.info(TAG, 'Avoidance function, statusBarHeight:' + this.statusBarHeight + ',density:' + this.density);
-    return this.getUIContext().px2vp(this.statusBarHeight);
   }
 }

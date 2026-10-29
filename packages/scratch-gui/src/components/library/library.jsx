@@ -92,7 +92,11 @@ const getAssetTypeForFileExtension = function (fileExtension) {
  * @returns {LibraryItem.PropTypes.icons} - an `imageSource` or array of them
  */
 const getItemIcons = function (item) {
-    const costumes = (item.json && item.json.costumes) || item.costumes;
+    const assetOrigin = () =>
+    (typeof window !== 'undefined' && window.__TESSLO_ASSET_ORIGIN__) ||
+    'https://cdn.assets.scratch.mit.edu';
+
+const costumes = (item.json && item.json.costumes) || item.costumes;
     if (costumes) {
         return costumes.map(getItemIcons);
     }
@@ -107,7 +111,7 @@ const getItemIcons = function (item) {
         return {
             assetId: item.assetId,
             assetType: getAssetTypeForFileExtension(item.dataFormat),
-            assetServiceUri: `https://cdn.assets.scratch.mit.edu/internalapi/asset/${item.assetId}.${item.dataFormat}/get/`
+            assetServiceUri: `${assetOrigin()}/internalapi/asset/${item.assetId}.${item.dataFormat}/get/`
         };
     }
 
@@ -117,7 +121,7 @@ const getItemIcons = function (item) {
         return {
             assetId: assetId,
             assetType: getAssetTypeForFileExtension(fileExtension),
-            assetServiceUri: `https://cdn.assets.scratch.mit.edu/internalapi/asset/${md5ext}/get/`
+            assetServiceUri: `${assetOrigin()}/internalapi/asset/${md5ext}/get/`
         };
     }
 };

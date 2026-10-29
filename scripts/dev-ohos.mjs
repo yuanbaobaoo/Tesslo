@@ -5,7 +5,6 @@ import {
     abilityName,
     buildHap,
     bundleName,
-    capture,
     findHap,
     listDevices,
     repoRoot,
@@ -90,7 +89,7 @@ try {
             const log = fs.existsSync(localLog) ? fs.readFileSync(localLog, 'utf8') : '';
             const interesting = log
                 .split(/\r?\n/)
-                .filter(line => /boot |scratch link|webgl probe/.test(line))
+                .filter(line => /boot |Scratch Link|BLE bridge|webgl probe|page (begin|end)|error/i.test(line))
                 .slice(-12);
             if (interesting.length) console.log(interesting.join('\n'));
         } catch {
@@ -111,15 +110,6 @@ try {
             console.log(`[dev:ohos] screenshot: ${localShot}`);
         } catch {
             console.log('[dev:ohos] screenshot unavailable');
-        }
-
-        const hilog = capture(toolchain.hdc, ['-t', serial, 'shell', 'hilog', '-x', '-T', 'Electron']);
-        if (hilog) {
-            const lines = hilog
-                .split(/\r?\n/)
-                .filter(line => line.includes(bundleName))
-                .slice(-12);
-            if (lines.length) console.log(lines.join('\n'));
         }
     }
 } catch (error) {

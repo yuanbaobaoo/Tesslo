@@ -20,13 +20,12 @@ media/fetched/
 media/cache/
 
 apps/tesslo/entry/libs/
+apps/tesslo/entry/src/main/resources/rawfile/
 apps/tesslo/entry/oh_modules/
-apps/tesslo/web_engine/oh_modules/
 apps/tesslo/oh_modules/
 apps/tesslo/**/build/
 apps/tesslo/.hvigor/
 apps/tesslo/build-profile.json5
-apps/tesslo/web_engine/src/main/resources/resfile/
 
 packages/scratch-link/dotnet/ohos-net/runtime/runtime.linux-musl-*/
 packages/scratch-link/dotnet/**/bin/

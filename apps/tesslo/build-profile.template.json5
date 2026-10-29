@@ -29,9 +29,5 @@
         },
       ],
     },
-    {
-      name: 'web_engine',
-      srcPath: './web_engine',
-    },
   ],
 }

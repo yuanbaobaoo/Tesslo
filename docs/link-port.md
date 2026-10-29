@@ -92,11 +92,10 @@ Scratch Link 的会话状态。
 模拟状态保存在桥进程内，因此跨多个 TCP 命令仍保持“已连接”和订阅关系，行为
 与真实 GATT 一致。
 
-## TypeScript 回退
+## TypeScript 实现
 
-`packages/scratch-link/src` 保留 TypeScript 实现，打包为 `link.cjs` 放进应用负载。
-Electron main 在找不到 `libtesslolink.so` 时加载它，便于桌面环境调试。HarmonyOS
-HAP 正常路径始终使用 C# 库。
+`packages/scratch-link/src` 保留 TypeScript 协议实现，用于测试和主机调试；
+HarmonyOS HAP 只使用 C# 库。
 
 ## 边界
 

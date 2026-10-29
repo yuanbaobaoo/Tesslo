@@ -6,7 +6,7 @@
   "license": "AGPL-3.0-only",
   "packageManager": "pnpm@11.21.0",
   "scripts": {
-    "build": "pnpm build:editor && pnpm build:desktop",
+    "build": "pnpm build:editor && pnpm build:web",
     "build:editor": "pnpm build:sb1 && pnpm build:blocks && pnpm build:storage && pnpm build:svg-renderer && pnpm build:render && pnpm build:vm && pnpm build:audio && pnpm build:l10n && pnpm build:paint && pnpm build:gui",
     "build:sb1": "pnpm --filter scratch-sb1-converter build",
     "build:blocks": "pnpm --filter scratch-blocks build",
@@ -18,8 +18,7 @@
     "build:l10n": "pnpm --filter scratch-l10n build",
     "build:paint": "pnpm --filter scratch-paint build",
     "build:gui": "pnpm --filter @scratch/scratch-gui run clean && pnpm --filter @scratch/scratch-gui run build:dist",
-    "build:desktop": "NODE_ENV=production pnpm --filter @tesslo/app compile",
-    "build:link": "pnpm --filter scratch-link build",
+    "build:web": "pnpm --filter @tesslo/app build:web",
     "build:link:csharp": "node scripts/build-link-csharp.mjs",
     "build:hap": "node scripts/build-hap.mjs",
     "dev:ohos": "node scripts/dev-ohos.mjs",

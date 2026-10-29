@@ -6,14 +6,10 @@ import {fileURLToPath} from 'node:url';
 export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const appRoot = path.join(repoRoot, 'apps/tesslo');
 export const hapRoot = appRoot;
-export const appPayload = path.join(
-    appRoot,
-    'web_engine/src/main/resources/resfile/resources/app'
-);
-export const desktopRoot = path.join(appRoot, 'desktop');
-export const desktopDist = path.join(desktopRoot, 'dist');
+export const webRoot = path.join(appRoot, 'web');
+export const webDist = path.join(webRoot, 'dist');
+export const rawfileRoot = path.join(appRoot, 'entry/src/main/resources/rawfile');
 export const mediaFetched = path.join(repoRoot, 'media/fetched');
-export const linkBundle = path.join(repoRoot, 'packages/scratch-link/dist/link.cjs');
 export const bundleName = 'io.github.yuanbaobaoo.tesslo';
 export const abilityName = 'EntryAbility';
 
@@ -115,60 +111,33 @@ function removeMaps(dir) {
 }
 
 export function ensureEditorBuild({build = false} = {}) {
-    if (build || !fs.existsSync(path.join(desktopDist, 'main/main.js'))) {
+    if (build || !fs.existsSync(path.join(webDist, 'index.html'))) {
         runPnpm(['build']);
     }
-    if (!fs.existsSync(path.join(desktopDist, 'renderer/index.html'))) {
-        throw new Error('desktop renderer is missing; run pnpm build');
-    }
-    if (!fs.existsSync(linkBundle)) {
-        runPnpm(['build:link']);
+    if (!fs.existsSync(path.join(webDist, 'index.html'))) {
+        throw new Error('web editor bundle is missing; run pnpm build:web');
     }
 }
 
-export function stageAppPayload() {
-    fs.rmSync(appPayload, {recursive: true, force: true});
-    fs.mkdirSync(appPayload, {recursive: true});
-    copyDir(path.join(desktopDist, 'main'), path.join(appPayload, 'main'));
-    copyDir(path.join(desktopDist, 'renderer'), path.join(appPayload, 'renderer'));
-    fs.mkdirSync(path.join(appPayload, 'static'), {recursive: true});
+export function stageWebPayload() {
+    fs.rmSync(rawfileRoot, {recursive: true, force: true});
+    fs.mkdirSync(rawfileRoot, {recursive: true});
+    copyDir(webDist, rawfileRoot);
+    fs.mkdirSync(path.join(rawfileRoot, 'static'), {recursive: true});
     if (fs.existsSync(mediaFetched)) {
-        fs.cpSync(mediaFetched, path.join(appPayload, 'static/fetched'), {recursive: true});
+        fs.cpSync(mediaFetched, path.join(rawfileRoot, 'static/fetched'), {recursive: true});
     } else {
         console.warn('[ohos] media/fetched is missing; the offline library will be empty');
     }
-    fs.copyFileSync(linkBundle, path.join(appPayload, 'link.cjs'));
-    removeMaps(appPayload);
-    fs.writeFileSync(
-        path.join(appPayload, 'package.json'),
-        JSON.stringify(
-            {
-                name: 'tesslo',
-                productName: 'Tesslo',
-                version: '0.1.0',
-                private: true,
-                license: 'AGPL-3.0-only',
-                main: './main/main.js'
-            },
-            null,
-            2
-        ) + '\n'
-    );
+    removeMaps(rawfileRoot);
 }
 
-export function ensureRuntime() {
-    const lib = path.join(hapRoot, 'entry/libs/arm64-v8a/libelectron.so');
-    const icu = path.join(hapRoot, 'web_engine/src/main/resources/resfile/icudtl.dat');
-    if (!fs.existsSync(lib) || !fs.existsSync(icu)) {
-        throw new Error(
-            'Electron OHOS runtime is missing from the HAP template. ' +
-                'Populate apps/tesslo/entry/libs and resfile from the pinned runtime asset, ' +
-                'then run pnpm build:link:csharp.'
-        );
-    }
-    const csharpLink = path.join(hapRoot, 'entry/libs/arm64-v8a/libtesslolink.so');
-    if (!fs.existsSync(csharpLink)) {
-        throw new Error('C# link NAPI bridge is missing; run pnpm build:link:csharp first.');
+export function ensureLink() {
+    const dir = path.join(hapRoot, 'entry/libs/arm64-v8a');
+    for (const name of ['libtesslolink.so', 'TessloLinkNative.so']) {
+        if (!fs.existsSync(path.join(dir, name))) {
+            throw new Error(`${name} is missing; run pnpm build:link:csharp first.`);
+        }
     }
 }
 
@@ -211,8 +180,8 @@ export function findHap({signed = true} = {}) {
 export function buildHap({build = false, signed = true} = {}) {
     const toolchain = resolveToolchain();
     ensureEditorBuild({build});
-    ensureRuntime();
-    stageAppPayload();
+    ensureLink();
+    stageWebPayload();
     ensureProfile();
     const profilePath = path.join(hapRoot, 'build-profile.json5');
     const templatePath = path.join(hapRoot, 'build-profile.template.json5');
@@ -226,7 +195,7 @@ export function buildHap({build = false, signed = true} = {}) {
     } else {
         ensureSigning();
     }
-    for (const dir of ['.hvigor', 'entry/build', 'web_engine/build']) {
+    for (const dir of ['.hvigor', 'entry/build']) {
         fs.rmSync(path.join(hapRoot, dir), {recursive: true, force: true});
     }
     console.log('[ohos] hvigor assembleHap');

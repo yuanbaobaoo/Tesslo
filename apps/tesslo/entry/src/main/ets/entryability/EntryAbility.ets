@@ -1,57 +1,56 @@
-// Copyright (c) 2024 Huawei Device Co., Ltd. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-import window from '@ohos.window';
-import Want from '@ohos.app.ability.Want';
-import AbilityConstant from '@ohos.app.ability.AbilityConstant';
-import { Configuration } from '@ohos.app.ability.Configuration';
+import { AbilityConstant, Permissions, UIAbility, Want, abilityAccessCtrl } from '@kit.AbilityKit';
+import { window } from '@kit.ArkUI';
 import { deviceInfo } from '@kit.BasicServicesKit';
-
-import { WebAbility, startTessloBleBridge } from 'web_engine';
+import { BusinessError } from '@kit.BasicServicesKit';
 import * as tesslolink from 'libtesslolink.so';
 
-export default class EntryAbility extends WebAbility {
-  onConfigurationUpdate(config: Configuration) {
-    super.onConfigurationUpdate(config);
-  }
+import { log } from '../common/AppLog';
+import { startTessloBleBridge } from '../ble/BleTcpBridge';
+import { startAssetServer } from '../assets/AssetServer';
 
-  onCreate(want: Want, launchParam: AbilityConstant.LaunchParam) {
-    super.onCreate(want, launchParam);
+const BLUETOOTH_PERMISSIONS: Array<Permissions> = ['ohos.permission.ACCESS_BLUETOOTH'];
+
+export default class EntryAbility extends UIAbility {
+  onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    log('boot arkweb');
     const wantSim = want.parameters?.['tessloBleSim'];
     const simulate = deviceInfo.productModel === 'emulator' || wantSim === 'true' || wantSim === true;
-    startTessloBleBridge(20113, simulate).catch((error: Error) => {
-      console.error(`tesslo BLE bridge start failed: ${error.message}`);
-    });
+    if (!simulate) {
+      abilityAccessCtrl.createAtManager()
+        .requestPermissionsFromUser(this.context, BLUETOOTH_PERMISSIONS)
+        .catch((error: BusinessError) => log(`bluetooth permission failed: ${error.message}`));
+    }
+    startTessloBleBridge(20113, simulate)
+      .then(() => log(`BLE bridge listening simulate=${simulate}`))
+      .catch((error: BusinessError) => log(`BLE bridge failed: ${error.message}`));
+    startAssetServer(this.context, 20114)
+      .catch((error: BusinessError) => log(`asset server failed: ${error.message}`));
     try {
       const status: number = tesslolink.start(20111);
-      console.info(`tesslo-link C# start status=${status}`);
+      log(`C# Scratch Link status=${status}`);
     } catch (error) {
-      console.error(`tesslo-link C# start failed: ${error}`);
+      log(`C# Scratch Link failed: ${error.message}`);
     }
   }
 
-  async onDestroy(): Promise<void> {
-    await super.onDestroy();
+  onWindowStageCreate(windowStage: window.WindowStage): void {
+    try {
+      windowStage.getMainWindowSync().setWindowLayoutFullScreen(true);
+    } catch (error) {
+      log(`full screen failed: ${error.message}`);
+    }
+    windowStage.loadContent('pages/Index', (error: BusinessError) => {
+      if (error.code) {
+        log(`loadContent failed: ${error.code} ${error.message}`);
+      }
+    });
   }
 
-  onWindowStageCreate(windowStage: window.WindowStage) {
-    super.onWindowStageCreate(windowStage);
+  onDestroy(): void {
+    try {
+      tesslolink.stop();
+    } catch (error) {
+      log(`C# Scratch Link stop failed: ${error.message}`);
+    }
   }
-
-  onWindowStageDestroy() {
-    super.onWindowStageDestroy();
-  }
-
-  onForeground() {
-    super.onForeground();
-  }
-
-  onBackground() {
-    super.onBackground();
-  }
-  protected isAppEntry(): boolean {
-    return true;
-  }
-
-};
+}

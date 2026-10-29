@@ -5,7 +5,7 @@
 - HarmonyOS 7 设备，开启开发者模式与 USB 调试。
 - `hdc list targets` 能看到设备序列号。
 - 命令行工具 26、JDK 21、.NET 9.0.104 就绪。
-- 已构建编辑器、C# Link，并准备好 Electron OHOS 运行库。
+- 已构建 Web 编辑器、C# Link。
 
 ```sh
 pnpm build
@@ -85,7 +85,7 @@ hdc -t <serial> fport tcp:20111 tcp:20111
 | 文件 | 内容 |
 | --- | --- |
 | `/data/app/el2/100/base/io.github.yuanbaobaoo.tesslo/files/tesslo-link.log` | C# Link 监听、客户端、扫描结果 |
-| `build/verify/<serial>-tesslo-main.log` | Electron 启动、渲染进程、WebGL 探测 |
+| `build/verify/<serial>-tesslo-main.log` | ArkWeb 启动、页面加载、WebGL 探测 |
 
 WebGL 检查行：
 
@@ -103,6 +103,6 @@ webgl probe {"webgl":true,"webgl2":true,...}
 
 ## 模拟器限制
 
-- 模拟器没有 WebGL，Electron 报告 `webgl=false`：界面可用，舞台不渲染。
+- 模拟器没有 WebGL，ArkWeb 报告 `webgl=false`：界面可用，舞台不渲染。
 - 模拟器没有蓝牙硬件，只能使用 `--ble-sim`。
 - 系统权限与文件选择器需要真人点击。
