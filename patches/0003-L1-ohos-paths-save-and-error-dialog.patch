@@ -1,0 +1,232 @@
+diff --git a/src/common/ElectronStorageHelper.js b/src/common/ElectronStorageHelper.js
+index e2068f6..88d0413 100644
+--- a/src/common/ElectronStorageHelper.js
++++ b/src/common/ElectronStorageHelper.js
+@@ -1,7 +1,18 @@
+ const fs = require('fs');
+ const path = require('path');
+ 
+-const staticAssets = path.resolve(__static, 'fetched');
++const staticAssets = [
++    process.env.TESSLO_STATIC_DIR && path.resolve(process.env.TESSLO_STATIC_DIR, 'fetched'),
++    path.resolve(process.resourcesPath || '', 'resources/app/static/fetched'),
++    path.resolve(process.resourcesPath || '', 'static/fetched'),
++    path.resolve(__static, 'fetched')
++].filter(Boolean).find(candidate => {
++    try {
++        return fs.existsSync(candidate);
++    } catch {
++        return false;
++    }
++}) || path.resolve(__static, 'fetched');
+ 
+ /**
+  * Allow the storage module to load files bundled in the Electron application.
+diff --git a/src/main/argv.js b/src/main/argv.js
+index 25be323..a1f9093 100644
+--- a/src/main/argv.js
++++ b/src/main/argv.js
+@@ -15,6 +15,9 @@ export const parseAndTrimArgs = argv => {
+     // ignore arguments AFTER parsing to handle cases like "electron --inspect=42 my.js arg1 arg2"
+     parsed._ = parsed._.slice(ignoreCount);
+ 
++    // OHOS appspawn may pass empty positional arguments; those are not project paths.
++    parsed._ = parsed._.filter(arg => typeof arg === 'string' && arg.length > 0);
++
+     return parsed;
+ };
+ 
+diff --git a/src/main/index.js b/src/main/index.js
+index 17bde4f..4b0ddfd 100644
+--- a/src/main/index.js
++++ b/src/main/index.js
+@@ -11,6 +11,19 @@ import MacOSMenu from './MacOSMenu';
+ import log from '../common/log.js';
+ import packageJson from '../../package.json';
+ 
++const tessloLogPath = path.join(app.getPath('userData'), 'tesslo-main.log');
++const tessloLog = message => {
++    try {
++        fs.ensureDirSync(path.dirname(tessloLogPath));
++        fs.appendFileSync(tessloLogPath, `${new Date().toISOString()} ${message}\n`);
++    } catch {
++        // logging must never change startup behavior
++    }
++};
++process.on('uncaughtException', error => tessloLog(`uncaught ${error.stack || error}`));
++process.on('unhandledRejection', error => tessloLog(`rejection ${error && error.stack || error}`));
++tessloLog(`boot argv=${JSON.stringify(process.argv)} appPath=${app.getAppPath()}`);
++
+ telemetry.appWasOpened();
+ 
+ // const defaultSize = {width: 1096, height: 715}; // minimum
+@@ -41,6 +54,18 @@ const PORT = process.env.PORT || 8601;
+ // this must happen BEFORE the app ready event!
+ app.commandLine.appendSwitch('host-resolver-rules', 'MAP device-manager.scratch.mit.edu 127.0.0.1');
+ 
++// HarmonyOS/Electron currently renders a black surface with the default EGL
++// path on the emulator. ANGLE + SwiftShader is the combination used by
++// working Electron-on-HarmonyOS apps; keep it scoped to OHOS so desktop
++// builds are unaffected.
++if (process.argv.some(arg => arg.startsWith('--ozone-platform=ohos'))) {
++    app.commandLine.appendSwitch('use-gl', 'angle');
++    app.commandLine.appendSwitch('use-angle', 'swiftshader-webgl');
++    app.commandLine.appendSwitch('enable-unsafe-swiftshader');
++    app.commandLine.appendSwitch('ignore-gpu-blocklist');
++    app.commandLine.appendSwitch('disable-gpu-sandbox');
++}
++
+ const displayPermissionDeniedWarning = (browserWindow, permissionType) => {
+     let title;
+     let message;
+@@ -48,12 +73,12 @@ const displayPermissionDeniedWarning = (browserWindow, permissionType) => {
+     case 'camera':
+         title = 'Camera Permission Denied';
+         message = 'Permission to use the camera has been denied. ' +
+-            'Scratch will not be able to take a photo or use video sensing blocks.';
++            'Tesslo will not be able to take a photo or use video sensing blocks.';
+         break;
+     case 'microphone':
+         title = 'Microphone Permission Denied';
+         message = 'Permission to use the microphone has been denied. ' +
+-            'Scratch will not be able to record sounds or detect loudness.';
++            'Tesslo will not be able to record sounds or detect loudness.';
+         break;
+     default: // shouldn't ever happen...
+         title = 'Permission Denied';
+@@ -63,10 +88,10 @@ const displayPermissionDeniedWarning = (browserWindow, permissionType) => {
+     let instructions;
+     switch (process.platform) {
+     case 'darwin':
+-        instructions = 'To change Scratch permissions, please check "Security & Privacy" in System Preferences.';
++        instructions = 'To change Tesslo permissions, please check "Security & Privacy" in System Preferences.';
+         break;
+     default:
+-        instructions = 'To change Scratch permissions, please check your system settings and restart Scratch.';
++        instructions = 'To change Tesslo permissions, please check your system settings and restart Tesslo.';
+         break;
+     }
+     message = `${message}\n\n${instructions}`;
+@@ -169,6 +194,7 @@ const handlePermissionRequest = async (webContents, permission, callback, detail
+ const ALLOWED_EXTERNAL_PROTOCOLS = ['http:', 'https:', 'mailto:'];
+ 
+ const createWindow = ({search = null, url = 'index.html', ...browserWindowOptions}) => {
++    tessloLog(`createWindow ${url} ${JSON.stringify(browserWindowOptions)}`);
+     const window = new BrowserWindow({
+         useContentSize: true,
+         show: false,
+@@ -331,6 +357,15 @@ const createMainWindow = () => {
+                         // The download was canceled or interrupted. Cancel the telemetry event and delete the file.
+                         throw new Error(`save ${doneState}`); // "save cancelled" or "save interrupted"
+                     }
++                    if (systemPreferences.fileAccessPersist) {
++                        // HarmonyOS requires persisted access for a path chosen through the picker.
++                        // The API is OHOS-only; guard so macOS/Windows builds keep working.
++                        try {
++                            await systemPreferences.fileAccessPersist(userChosenPath);
++                        } catch (persistError) {
++                            log.warn(`fileAccessPersist failed for ${userChosenPath}: ${persistError.message}`);
++                        }
++                    }
+                     await fs.move(tempPath, userChosenPath, {overwrite: true});
+                     if (isProjectSave) {
+                         const newProjectTitle = path.basename(userChosenPath, extName);
+@@ -371,7 +406,7 @@ const createMainWindow = () => {
+         const choice = dialog.showMessageBoxSync(window, {
+             title: packageJson.productName,
+             type: 'question',
+-            message: 'Leave Scratch?',
++            message: 'Leave Tesslo?',
+             detail: 'Any unsaved changes will be lost.',
+             buttons: ['Stay', 'Leave'],
+             cancelId: 0, // closing the dialog means "stay"
+@@ -400,6 +435,7 @@ if (process.platform === 'darwin') {
+ 
+ // quit application when all windows are closed
+ app.on('window-all-closed', () => {
++    tessloLog('window-all-closed');
+     app.quit();
+ });
+ 
+@@ -441,9 +477,63 @@ app.on('ready', () => {
+     }
+ 
+     _windows.main = createMainWindow();
++    tessloLog('main window created');
++    _windows.main.webContents.once('did-finish-load', async () => {
++        try {
++            const gpu = await _windows.main.webContents.executeJavaScript(`(() => {
++                const canvas = document.createElement('canvas');
++                const gl = canvas.getContext('webgl', {alpha: false, stencil: true, antialias: false}) ||
++                    canvas.getContext('experimental-webgl');
++                const gl2 = document.createElement('canvas').getContext('webgl2');
++                return {
++                    webgl: !!gl,
++                    webgl2: !!gl2,
++                    renderer: gl ? gl.getParameter(gl.RENDERER) : null,
++                    vendor: gl ? gl.getParameter(gl.VENDOR) : null
++                };
++            })()`);
++            tessloLog(`webgl probe ${JSON.stringify(gpu)}`);
++        } catch (error) {
++            tessloLog(`webgl probe failed ${error.message}`);
++        }
++    });
+     _windows.main.on('closed', () => {
++        tessloLog('main window closed');
+         delete _windows.main;
+     });
++
++    if (process.env.TESSLO_SMOKE === '1') {
++        const smokeTimeout = setTimeout(() => {
++            console.error('[tesslo-smoke] timeout waiting for renderer');
++            app.exit(1);
++        }, 30000);
++        _windows.main.webContents.once('did-finish-load', () => {
++            console.log('[tesslo-smoke] did-finish-load');
++            setTimeout(async () => {
++                try {
++                    const result = await _windows.main.webContents.executeJavaScript(`({
++                        title: document.title,
++                        href: location.href,
++                        appText: (document.querySelector('#app')?.innerText || '').slice(0, 300),
++                        hasBlocks: !!document.querySelector('[class*="blocks"]'),
++                        hasStage: !!document.querySelector('canvas')
++                    })`);
++                    console.log(`[tesslo-smoke] renderer ${JSON.stringify(result)}`);
++                    clearTimeout(smokeTimeout);
++                    app.quit();
++                } catch (error) {
++                    console.error(`[tesslo-smoke] evaluate failed: ${error.message}`);
++                    clearTimeout(smokeTimeout);
++                    app.exit(1);
++                }
++            }, 5000);
++        });
++        _windows.main.webContents.once('did-fail-load', (event, code, description) => {
++            console.error(`[tesslo-smoke] did-fail-load ${code} ${description}`);
++            clearTimeout(smokeTimeout);
++            app.exit(1);
++        });
++    }
+     _windows.about = createAboutWindow();
+     _windows.about.on('close', event => {
+         event.preventDefault();
+@@ -466,6 +556,17 @@ ipcMain.on('open-privacy-policy-window', () => {
+     _windows.privacy.show();
+ });
+ 
++// Renderer-side replacement for the legacy `remote.dialog` call. Keeping the
++// dialog in the main process works on Electron 40, where `remote` is gone.
++ipcMain.handle('tesslo-show-error', async (event, {title, message, detail} = {}) => {
++    await dialog.showMessageBox(_windows.main, {
++        type: 'error',
++        title: title || 'Tesslo',
++        message: message || 'An error occurred.',
++        detail
++    });
++});
++
+ // start loading initial project data before the GUI needs it so the load seems faster
+ const initialProjectDataPromise = (async () => {
+     if (argv._.length === 0) {

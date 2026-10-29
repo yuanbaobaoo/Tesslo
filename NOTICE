@@ -1,0 +1,29 @@
+Tesslo is based on the Scratch Desktop toolchain.
+
+Upstream projects and copyright holders include:
+
+  Scratch Desktop
+  Copyright (c) Scratch Foundation and contributors
+  https://github.com/scratchfoundation/scratch-desktop
+
+  Scratch GUI / Scratch VM / Scratch Render / Scratch Paint
+  Copyright (c) Scratch Foundation and contributors
+  https://github.com/scratchfoundation/scratch-editor
+
+  Scratch Link
+  Copyright (c) Scratch Foundation and contributors
+  https://github.com/scratchfoundation/scratch-link
+
+  Scratch Blocks
+  Copyright (c) Scratch Foundation and contributors
+  Licensed under the Apache License, Version 2.0
+
+  zcode-ohos (HarmonyOS Electron HAP shell / web_engine reference)
+  Copyright (c) zcode-ohos contributors
+  Licensed under the Apache License, Version 2.0
+
+  harmonypc-electron (Electron-on-HarmonyOS runtime reference)
+  https://atomgit.com/jianguoxu/harmonypc-electron
+
+Tesslo is an unofficial project. It is not affiliated with, endorsed by,
+or sponsored by Scratch Foundation or MIT.

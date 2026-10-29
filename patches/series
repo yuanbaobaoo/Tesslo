@@ -1,0 +1,10 @@
+# Applied in order. One patch filename per line.
+# Lines starting with # are ignored.
+0001-L1-pin-electron-40-and-branding.patch
+0002-L1-disable-telemetry.patch
+0003-L1-ohos-paths-save-and-error-dialog.patch
+0004-L2-remove-remote-dialog.patch
+0005-L1-tesslo-splash.patch
+0006-L1-ohos-native-gl.patch
+0007-L3-embedded-scratch-link.patch
+0008-L2-ohos-static-asset-path.patch

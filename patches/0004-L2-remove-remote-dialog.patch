@@ -1,0 +1,19 @@
+diff --git a/src/renderer/ScratchDesktopGUIHOC.jsx b/src/renderer/ScratchDesktopGUIHOC.jsx
+index beaf40f..ea8d458 100644
+--- a/src/renderer/ScratchDesktopGUIHOC.jsx
++++ b/src/renderer/ScratchDesktopGUIHOC.jsx
+@@ -1,4 +1,4 @@
+-import {ipcRenderer, remote} from 'electron';
++import {ipcRenderer} from 'electron';
+ import bindAll from 'lodash.bindall';
+ import omit from 'lodash.omit';
+ import PropTypes from 'prop-types';
+@@ -54,7 +54,7 @@ const ScratchDesktopGUIHOC = function (WrappedComponent) {
+                     e => {
+                         this.props.onLoadingCompleted();
+                         this.props.onLoadedProject(this.props.loadingState, false);
+-                        remote.dialog.showMessageBox(remote.getCurrentWindow(), {
++                        ipcRenderer.invoke('tesslo-show-error', {
+                             type: 'error',
+                             title: 'Failed to load project',
+                             message: 'Invalid or corrupt project file.',

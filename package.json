@@ -1,0 +1,19 @@
+{
+  "name": "tesslo-ohos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tesslo (拼格工坊) - an unofficial, Scratch-compatible block editor for HarmonyOS 7",
+  "license": "AGPL-3.0-only",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "sync": "bash scripts/sync-upstream.sh",
+    "patch": "bash scripts/apply-patches.sh",
+    "build:desktop": "bash scripts/build-desktop.sh",
+    "test": "node --test packages/scratch-link-ohos/test/*.test.js packages/protocol-tests/test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

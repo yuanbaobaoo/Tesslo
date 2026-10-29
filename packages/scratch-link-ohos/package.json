@@ -1,0 +1,26 @@
+{
+  "name": "@tesslo/scratch-link-ohos",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Scratch Link protocol server for Tesslo (HarmonyOS transport bridge)",
+  "license": "AGPL-3.0-only",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "tesslo-scratch-link": "./src/cli.js"
+  },
+  "scripts": {
+    "start": "node ./src/cli.js",
+    "test": "node --test ./test/*.test.js",
+    "build": "esbuild src/index.js --bundle --platform=node --format=cjs --external:electron --outfile=dist/scratch-link.cjs"
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

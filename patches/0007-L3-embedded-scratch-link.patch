@@ -1,0 +1,29 @@
+diff --git a/src/main/index.js b/src/main/index.js
+--- a/src/main/index.js	2026-10-29 00:20:54
++++ b/src/main/index.js	2026-10-29 00:20:54
+@@ -447,8 +447,25 @@
+     }
+ }
+ 
++// HarmonyOS runs Scratch Link inside the app so the VM can reach ws://127.0.0.1:20111.
++const startScratchLink = () => {
++    if (!isHarmonyOS || process.env.TESSLO_SCRATCH_LINK === '0') return;
++    try {
++        const file = path.join(app.getAppPath(), 'scratch-link.cjs');
++        const {startScratchLinkServer} = eval('require')(file);
++        startScratchLinkServer({
++            host: '127.0.0.1',
++            port: Number(process.env.TESSLO_LINK_PORT || 20111)
++        }).then(server => tessloLog(`scratch link listening ${JSON.stringify(server.address())}`))
++            .catch(error => tessloLog(`scratch link failed ${error.message}`));
++    } catch (error) {
++        tessloLog(`scratch link load failed ${error.message}`);
++    }
++};
++
+ // create main BrowserWindow when electron is ready
+ app.on('ready', () => {
++    startScratchLink();
+     if (isDevelopment) {
+         import('electron-devtools-installer').then(importedModule => {
+             // v4 publishes `installExtension` as a named export; v3 published
