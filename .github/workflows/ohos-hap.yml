@@ -1,0 +1,214 @@
+# HarmonyOS HAP 自动构建与发版
+#
+# 两条触发路径：workflow_dispatch（手动，产物进 Artifact 验证流程）；push tag v*（构建 + 未签名 HAP 发该 tag Release）。
+# 工具链与依赖细节（CLT 分卷托管、ohos-net runtime pack、离线素材包）见本文件内注释。
+
+name: OHOS HAP
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # 可选：任意 command-line-tools 整包直链（http/file），设置后优先于分卷源。
+  OHOS_CLT_URL: ${{ vars.OHOS_CLT_URL }}
+  # 可选：ohos-net runtime pack / 离线素材包的自备直链，覆盖下方默认源。
+  OHOS_NET_PACK_URL: ${{ vars.OHOS_NET_PACK_URL }}
+  OHOS_MEDIA_URL: ${{ vars.OHOS_MEDIA_URL }}
+
+jobs:
+  build:
+    name: Build unsigned HAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Free disk space & install system deps
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          # libgl1/libx11-6：HMS 工具链运行时依赖（缺失 CompileResource 失败）。
+          sudo apt-get update -qq && sudo apt-get install -y -qq libgl1 libx11-6 zstd
+          df -h /
+
+      # full history：Release 说明需要 tag 之间的提交列表（git describe/log）
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # command-line-tools 自带 jbr；此步为保险（hvigor 找不到自带 jre 时兜底）。
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # build:link:csharp 交叉编译 C# 桥需要 .NET 9（版本与本仓 ohos-net.lock.json 一致）。
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.104"
+
+      - name: Install OHOS command-line-tools
+        run: |
+          set -e
+          mkdir -p /tmp/clt && cd /tmp/clt
+          # 官方原包 26.0.0.851（API 26），分卷托管在 GitCode ohos-tools Release；
+          # cat 合并为字节级无损拼接。与 zcode-ohos CI 共用同一份公开源。
+          EXPECTED_SHA256="ab604bd92721d5cbcafd154e6461d46b9f1b105e7b89eab04a9d046681198082"
+          BASE="https://gitcode.com/yuanbaobaoo/zcode-ohos/releases/download/ohos-tools"
+          if [ -n "$OHOS_CLT_URL" ]; then
+            curl -fL --retry 3 "$OHOS_CLT_URL" -o clt.zip
+          else
+            curl -fL --retry 3 "$BASE/commandline-tools-linux-x64-26.0.0.851.zip.part1" -o clt.zip.part1
+            curl -fL --retry 3 "$BASE/commandline-tools-linux-x64-26.0.0.851.zip.part2" -o clt.zip.part2
+            cat clt.zip.part1 clt.zip.part2 > clt.zip
+            rm -f clt.zip.part1 clt.zip.part2
+          fi
+          # 官方哈希锁定：内容被篡改/换版本即刻失败
+          echo "$EXPECTED_SHA256  clt.zip" | sha256sum -c -
+          unzip -q clt.zip -d "$HOME/ohos-clt"
+          # 自动探测解压后的工具根目录（兼容不同 zip 层级），以 bin/hvigorw 为锚点。
+          CLT_ROOT="$(dirname "$(dirname "$(find "$HOME/ohos-clt" -maxdepth 3 -name hvigorw -path "*/bin/*" | head -1)")")"
+          echo "OHOS_COMMAND_LINE_TOOLS_ROOT=$CLT_ROOT" >> "$GITHUB_ENV"
+          # build:link:csharp 以 OHOS_SDK_ROOT 定位 Native SDK（锚点 native/oh-uni-package.json）
+          echo "OHOS_SDK_ROOT=$CLT_ROOT/sdk/default" >> "$GITHUB_ENV"
+          echo "command-line-tools: $CLT_ROOT"
+
+      - name: Fetch ohos-net runtime pack
+        run: |
+          set -e
+          # vendored OpenHarmony NativeAOT runtime pack（arm64-v8a），见 ohos-net.lock.json。
+          # 目录不入库（.gitignore），打包托管在 GitCode tesslo-build-assets Release。
+          EXPECTED_SHA256="26f438553bd845a48ed5f667c45f2fde6e45c2df10b8f88a1ef51db771cc80ed"
+          URL="${OHOS_NET_PACK_URL:-https://gitcode.com/yuanbaobaoo/Tesslo/releases/download/tesslo-build-assets/ohos-net-runtime-pack-linux-musl-arm64.tar.zst}"
+          curl -fL --retry 3 "$URL" -o /tmp/runtime-pack.tar.zst
+          echo "$EXPECTED_SHA256  /tmp/runtime-pack.tar.zst" | sha256sum -c -
+          mkdir -p packages/scratch-link/dotnet/ohos-net/runtime
+          tar --zstd -xf /tmp/runtime-pack.tar.zst -C packages/scratch-link/dotnet/ohos-net/runtime
+          ls packages/scratch-link/dotnet/ohos-net/runtime/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler
+
+      - name: Fetch offline media library
+        run: |
+          # media/fetched（1328 个素材，~57MB，统计见 media/manifest.json）不入库。
+          # 下载失败时：tag 构建（发版）必须失败；手动触发则降级为空素材库继续。
+          set -e
+          EXPECTED_SHA256="b162600b1ab2c2004a01da78b4dd76c0c59289bb08adb1a39099e3f02b764fb6"
+          URL="${OHOS_MEDIA_URL:-https://gitcode.com/yuanbaobaoo/Tesslo/releases/download/tesslo-build-assets/media-fetched.tar.zst}"
+          mkdir -p media/fetched
+          if ! curl -fL --retry 3 "$URL" -o /tmp/media.tar.zst; then
+            if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+              echo "::error::离线素材包下载失败，tag 构建不允许空素材库"
+              exit 1
+            fi
+            echo "::warning::离线素材包下载失败，将以空素材库继续（库内缩略图不可用）"
+            exit 0
+          fi
+          echo "$EXPECTED_SHA256  /tmp/media.tar.zst" | sha256sum -c -
+          tar --zstd -xf /tmp/media.tar.zst -C media/fetched
+          echo "media files: $(find media/fetched -type f | wc -l)"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build web editor
+        run: pnpm build
+
+      - name: Build C# link bridge
+        run: |
+          # build:link:csharp 以 DOTNET_ROOT 定位 dotnet（setup-dotnet 装在 toolcache）。
+          echo "DOTNET_ROOT=$(dirname "$(dirname "$(command -v dotnet)")")" >> "$GITHUB_ENV"
+          pnpm build:link:csharp
+          ls -la apps/tesslo/entry/libs/arm64-v8a/
+
+      - name: Bundle OHOS HAP (unsigned)
+        run: pnpm build:hap
+
+      - name: Collect artifact & checksums
+        run: |
+          set -e
+          mkdir -p dist
+          OUT="apps/tesslo/entry/build/default/outputs/default"
+          if ! ls "$OUT"/*-unsigned.hap >/dev/null 2>&1; then
+            echo "::error::未找到未签名 HAP，实际内容: $(ls "$OUT" 2>/dev/null | tr '\n' ' ')"
+            exit 1
+          fi
+          cp "$OUT"/*-unsigned.hap "dist/Tesslo-${GITHUB_REF_NAME}-ohos-arm64-unsigned.hap"
+          cd dist
+          sha256sum Tesslo-*.hap > sha256.txt
+          cat sha256.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ohos-hap-unsigned
+          path: |
+            dist/Tesslo-*-ohos-arm64-unsigned.hap
+            dist/sha256.txt
+          retention-days: 14
+
+      # 版本无关的 latest 别名资产：让 README 的
+      # releases/latest/download/Tesslo-latest-ohos-arm64-unsigned.hap 直链始终可下载。
+      - name: Prepare latest alias artifact
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd dist
+          cp "Tesslo-${GITHUB_REF_NAME}-ohos-arm64-unsigned.hap" Tesslo-latest-ohos-arm64-unsigned.hap
+          sha256sum Tesslo-latest-ohos-arm64-unsigned.hap >> sha256.txt
+
+      # Release 说明 = 上一个 tag 以来的真实提交列表 + 固定的安装/校验说明。
+      # 不从 commit message 之外编造内容；首个 tag（无前驱）时列最近 20 条。
+      - name: Compose release body
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -e
+          TAG="${GITHUB_REF_NAME}"
+          PREV="$(git describe --abbrev=0 --match='v*' "${TAG}^" 2>/dev/null || true)"
+          {
+            echo "## ${TAG}"
+            echo
+            if [ -n "$PREV" ]; then
+              echo "### 自 ${PREV} 以来的变更"
+              echo
+              echo '```'
+              git log --no-merges --format="%h %s%n%b" "${PREV}..${TAG}"
+              echo '```'
+            else
+              echo "### 变更（最近 20 条）"
+              echo
+              echo '```'
+              git log --no-merges --format="%h %s%n%b" -20 "${TAG}"
+              echo '```'
+            fi
+            echo
+            echo "### 安装与校验"
+            echo
+            echo "- 未签名 HAP（HarmonyOS / arm64）：需自行签名（debug Profile 绑定设备）后安装，或从源码构建"
+            echo "- 完整性：附件 sha256.txt；长期直链 Tesslo-latest-ohos-arm64-unsigned.hap 每次发版覆盖更新"
+          } > release-body.md
+          cat release-body.md
+
+      - name: Publish Release (tag only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/Tesslo-*-ohos-arm64-unsigned.hap
+            dist/Tesslo-latest-ohos-arm64-unsigned.hap
+            dist/sha256.txt
+          body_path: release-body.md
+          generate_release_notes: false
