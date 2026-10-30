@@ -94,7 +94,7 @@ Scratch Link 的会话状态。
 
 ## TypeScript 实现
 
-`packages/scratch-link-ohos/src` 保留 TypeScript 协议实现，用于测试和主机调试；
+`packages/scratch-link/src` 保留 TypeScript 协议实现，用于测试和主机调试；
 HarmonyOS HAP 只使用 C# 库。
 
 ## 边界
