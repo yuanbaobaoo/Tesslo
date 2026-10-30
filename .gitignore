@@ -28,8 +28,8 @@ apps/tesslo/**/build/
 apps/tesslo/.hvigor/
 apps/tesslo/build-profile.json5
 
-packages/scratch-link/dotnet/ohos-net/runtime/runtime.linux-musl-*/
-packages/scratch-link/dotnet/**/bin/
-packages/scratch-link/dotnet/**/obj/
-packages/scratch-link/dotnet/napi/*.so
+packages/scratch-link-ohos/dotnet/ohos-net/runtime/runtime.linux-musl-*/
+packages/scratch-link-ohos/dotnet/**/bin/
+packages/scratch-link-ohos/dotnet/**/obj/
+packages/scratch-link-ohos/dotnet/napi/*.so
 apps/tesslo/build-profile*.local

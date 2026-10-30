@@ -598,7 +598,7 @@ importers:
         specifier: 3.3.12
         version: 3.3.12(webpack@4.47.0)
 
-  packages/scratch-link:
+  packages/scratch-link-ohos:
     dependencies:
       ws:
         specifier: ^8.22.0

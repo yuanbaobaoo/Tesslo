@@ -95,9 +95,9 @@ jobs:
           URL="${OHOS_NET_PACK_URL:-https://gitcode.com/yuanbaobaoo/Tesslo/releases/download/tesslo-build-assets/ohos-net-runtime-pack-linux-musl-arm64.tar.zst}"
           curl -fL --retry 3 "$URL" -o /tmp/runtime-pack.tar.zst
           echo "$EXPECTED_SHA256  /tmp/runtime-pack.tar.zst" | sha256sum -c -
-          mkdir -p packages/scratch-link/dotnet/ohos-net/runtime
-          tar --zstd -xf /tmp/runtime-pack.tar.zst -C packages/scratch-link/dotnet/ohos-net/runtime
-          ls packages/scratch-link/dotnet/ohos-net/runtime/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler
+          mkdir -p packages/scratch-link-ohos/dotnet/ohos-net/runtime
+          tar --zstd -xf /tmp/runtime-pack.tar.zst -C packages/scratch-link-ohos/dotnet/ohos-net/runtime
+          ls packages/scratch-link-ohos/dotnet/ohos-net/runtime/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler
 
       - name: Fetch offline media library
         run: |
