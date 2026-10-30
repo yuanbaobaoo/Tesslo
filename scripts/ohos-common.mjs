@@ -174,7 +174,11 @@ export function findHap({signed = true} = {}) {
         .map(name => path.join(outputDir, name));
     const signedHap = haps.find(file => file.endsWith('-signed.hap'));
     const unsignedHap = haps.find(file => file.endsWith('-unsigned.hap'));
-    return (signed ? signedHap : unsignedHap) || haps[0] || null;
+    if (signed) {
+        // 签名包缺失时不能静默回退到未签名包，否则真机安装会失败且难以定位
+        return signedHap || null;
+    }
+    return unsignedHap || haps[0] || null;
 }
 
 export function buildHap({build = false, signed = true} = {}) {
