@@ -25,6 +25,8 @@ export default class WebStorageHelper {
                 }
                 return response.arrayBuffer();
             })
-            .then(data => new this.parent.Asset(assetType, assetId, dataFormat, data));
+            // Asset.data 期望 Uint8Array（encodeDataURI 按数组索引读取）；
+            // 直接传 ArrayBuffer 会被静默编码成空 data URI，导致库缩略图空白
+            .then(data => new this.parent.Asset(assetType, assetId, dataFormat, new Uint8Array(data)));
     }
 }

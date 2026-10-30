@@ -1,6 +1,5 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-import VisibilitySensor from 'react-visibility-sensor';
 
 import {legacyConfig} from '../../legacy-config';
 
@@ -37,18 +36,30 @@ class ScratchImage extends React.PureComponent {
             this._pendingImages.delete(nextImage);
             const imageSource = nextImage.props.imageSource;
             ++this._currentJobs;
+            const finishJob = () => {
+                --this._currentJobs;
+                this.loadPendingImages();
+            };
             legacyConfig.storage.scratchStorage
                 .load(imageSource.assetType, imageSource.assetId)
                 .then(asset => {
-                    if (!nextImage.wasUnmounted) {
+                    if (!nextImage.wasUnmounted && asset) {
                         const dataURI = asset.encodeDataURI();
 
                         nextImage.setState({
                             imageURI: dataURI
                         });
                     }
-                    --this._currentJobs;
-                    this.loadPendingImages();
+                    finishJob();
+                })
+                .catch(error => {
+                    // 加载失败也必须释放并发槽位，否则队列会被卡死，
+                    // 后续缩略图全部无法显示
+                    if (nextImage.wasUnmounted !== undefined && !nextImage.wasUnmounted) {
+                        // eslint-disable-next-line no-console
+                        console.warn('library image failed to load', error);
+                    }
+                    finishJob();
                 });
         }
     }
@@ -57,6 +68,12 @@ class ScratchImage extends React.PureComponent {
         super(props);
         this.state = {};
         Object.assign(this.state, this._loadImageSource(props.imageSource));
+    }
+    componentDidMount () {
+        // 部分嵌入端 WebView（如 HarmonyOS ArkWeb）上 VisibilitySensor 不会回调
+        // children 函数，导致加载队列无人驱动；挂载后主动泵一次队列兜底。
+        // loadPendingImages 幂等，与 sensor 触发互不冲突。
+        ScratchImage.loadPendingImages();
     }
     componentWillReceiveProps (nextProps) {
         const newState = this._loadImageSource(nextProps.imageSource);
@@ -100,28 +117,20 @@ class ScratchImage extends React.PureComponent {
 
             ...imgProps
         } = this.props;
+        // 注意：不要把 <img> 放进 VisibilitySensor 的 render-props children 里。
+        // 部分嵌入端 WebView（如 HarmonyOS ArkWeb）不会调用 sensor 的 children
+        // 函数，导致图片元素永远不渲染；加载队列由 componentDidMount 与每个
+        // 任务完成时的泵驱动，不依赖 sensor 回调。
+        ScratchImage.loadPendingImages();
         return (
-            <VisibilitySensor
-                intervalCheck
-                scrollCheck
-            >
-                {
-                    ({isVisible}) => {
-                        this.isVisible = isVisible;
-                        ScratchImage.loadPendingImages();
-                        return (
-                            <img
-                                src={this.state.imageURI}
-                                style={{
-                                    minWidth: '1px',
-                                    minHeight: '1px'
-                                }}
-                                {...imgProps}
-                            />
-                        );
-                    }
-                }
-            </VisibilitySensor>
+            <img
+                src={this.state.imageURI}
+                style={{
+                    minWidth: '1px',
+                    minHeight: '1px'
+                }}
+                {...imgProps}
+            />
         );
     }
 }

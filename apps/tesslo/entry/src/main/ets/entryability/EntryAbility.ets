@@ -29,9 +29,18 @@ export default class EntryAbility extends UIAbility {
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
     try {
+      // 全屏沉浸布局：内容铺满整屏（底部不让出导航区、无白条），
+      // 顶部由 Index 页面用安全区内边距避让状态栏；
+      // 状态栏纯黑底 + 白色图标，与菜单栏形成强对比
       windowStage.getMainWindowSync().setWindowLayoutFullScreen(true);
+      windowStage.getMainWindowSync().setWindowSystemBarProperties({
+        statusBarColor: '#000000',
+        statusBarContentColor: '#FFFFFF',
+        navigationBarColor: '#000000',
+        navigationBarContentColor: '#FFFFFF'
+      });
     } catch (error) {
-      log(`full screen failed: ${error.message}`);
+      log(`window layout failed: ${error.message}`);
     }
     windowStage.loadContent('pages/Index', (error: BusinessError) => {
       if (error.code) {

@@ -14,7 +14,9 @@ GUI.setAppElement(appTarget);
 const WrappedGUI = AppStateHOC(GUI);
 
 const onStorageInit = storage => {
-    storage.addHelper(new WebStorageHelper(storage));
+    // 本地素材 helper 必须排在官方 CDN web store 之前（priority=1），
+    // 否则离线设备上每次素材请求都会先等待 CDN 超时才回退本地
+    storage.addHelper(new WebStorageHelper(storage), 1);
 };
 
 const App = () => {
