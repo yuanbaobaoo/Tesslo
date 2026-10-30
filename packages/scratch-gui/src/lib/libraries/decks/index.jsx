@@ -451,10 +451,7 @@ export default {
         img: libraryTXTSpeech,
         category: CATEGORIES.prompts,
         steps: [{
-            video: 'k54n8uwcty',
-            trackingPixel: (
-                <img src="https://code.org/api/hour/begin_scratch_talk.png" />
-            )
+            video: 'k54n8uwcty'
         }, {
             title: (
                 <FormattedMessage
@@ -1417,10 +1414,7 @@ export default {
         img: libraryCartoonNetwork,
         category: CATEGORIES.prompts,
         steps: [{
-            video: 'uz5oz5h9yg',
-            trackingPixel: (
-                <img src="https://code.org/api/hour/begin_scratch_adventure.png" />
-            )
+            video: 'uz5oz5h9yg'
         }, {
             title: (
                 <FormattedMessage

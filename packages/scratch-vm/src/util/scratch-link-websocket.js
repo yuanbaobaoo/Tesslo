@@ -39,58 +39,29 @@ class ScratchLinkWebSocket {
             throw new Error(`Unknown ScratchLink socket Type: ${this._type}`);
         }
 
-        // Try ws:// (the new way) and wss:// (the old way) simultaneously. If either connects, close the other. If we
-        // were to try one and fall back to the other on failure, that could mean a delay of 30 seconds or more for
-        // those who need the fallback.
-        // If both connections fail we should report only one error.
+        // Tesslo 只连接设备内的 Scratch Link 桥（packages/scratch-link 的 C# 服务，
+        // 由 EntryAbility 启动并监听 127.0.0.1:20111）。
+        // 不再同时竞速连接官方云端 device-manager——离线无意义，联网时还会把
+        // 外设流量意外路由到 Scratch 官方服务器。
 
-        const setSocket = (socketToUse, socketToClose) => {
-            socketToClose.onopen = socketToClose.onerror = null;
-            socketToClose.close();
+        this._ws = new WebSocket(`ws://127.0.0.1:20111/${pathname}`);
 
-            this._ws = socketToUse;
-            this._ws.onopen = this._onOpen;
+        const connectTimeout = setTimeout(() => {
+            this._ws.onopen = this._ws.onclose = this._ws.onerror = null;
+            this._ws.close();
+            this._onError(new Event('timeout'));
+        }, 15 * 1000);
+
+        this._ws.onopen = openEvent => {
+            clearTimeout(connectTimeout);
             this._ws.onclose = this._onClose;
             this._ws.onerror = this._onError;
             this._ws.onmessage = this._onMessage.bind(this);
+            this._onOpen(openEvent);
         };
-
-        const ws = new WebSocket(`ws://127.0.0.1:20111/${pathname}`);
-        const wss = new WebSocket(`wss://device-manager.scratch.mit.edu:20110/${pathname}`);
-
-        const connectTimeout = setTimeout(() => {
-            // neither socket succeeded before the timeout
-            setSocket(ws, wss);
-            this._ws.onerror(new Event('timeout'));
-        }, 15 * 1000);
-        ws.onopen = openEvent => {
+        this._ws.onerror = errorEvent => {
             clearTimeout(connectTimeout);
-            setSocket(ws, wss);
-            this._ws.onopen(openEvent);
-        };
-        wss.onopen = openEvent => {
-            clearTimeout(connectTimeout);
-            setSocket(wss, ws);
-            this._ws.onopen(openEvent);
-        };
-
-        let wsError;
-        let wssError;
-        const errorHandler = () => {
-            // if only one has received an error, we haven't overall failed yet
-            if (wsError && wssError) {
-                clearTimeout(connectTimeout);
-                setSocket(ws, wss);
-                this._ws.onerror(wsError);
-            }
-        };
-        ws.onerror = errorEvent => {
-            wsError = errorEvent;
-            errorHandler();
-        };
-        wss.onerror = errorEvent => {
-            wssError = errorEvent;
-            errorHandler();
+            this._onError(errorEvent);
         };
     }
 

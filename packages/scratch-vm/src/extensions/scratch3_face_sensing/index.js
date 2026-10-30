@@ -7,7 +7,6 @@ const TargetType = require('../../extension-support/target-type');
 const {distance, toScratchCoords} = require('./utils');
 
 const FaceDetection = require('@tensorflow-models/face-detection');
-const mediapipePackage = require('@mediapipe/face_detection/package.json');
 
 /**
  * Icon svg to be displayed in the blocks category menu, encoded as a data URI.
@@ -92,22 +91,15 @@ class Scratch3FaceSensingBlocks {
         this.runtime.emit('EXTENSION_DATA_LOADING', true);
 
         const model = FaceDetection.SupportedModels.MediaPipeFaceDetector;
+        // 模型与 wasm 已随 scratch-gui 构建打包到本地 chunks/mediapipe/face_detection；
+        // 相对路径随页面（rawfile 根目录下的 index.html）解析，不再回退 jsdelivr CDN
         const detectorConfig = {
             runtime: 'mediapipe',
-            solutionPath: '/chunks/mediapipe/face_detection',
+            solutionPath: 'chunks/mediapipe/face_detection',
             maxFaces: 1
         };
 
         FaceDetection.createDetector(model, detectorConfig)
-            .catch(() => {
-                const fallbackConfig = {
-                    runtime: 'mediapipe',
-                    solutionPath: `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@${mediapipePackage.version}`,
-                    maxFaces: 1
-                };
-
-                return FaceDetection.createDetector(model, fallbackConfig);
-            })
             .then(detector => {
                 this._faceDetector = detector;
                 if (this.runtime.ioDevices) {

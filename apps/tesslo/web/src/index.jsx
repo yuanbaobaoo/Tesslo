@@ -14,8 +14,8 @@ GUI.setAppElement(appTarget);
 const WrappedGUI = AppStateHOC(GUI);
 
 const onStorageInit = storage => {
-    // 本地素材 helper 必须排在官方 CDN web store 之前（priority=1），
-    // 否则离线设备上每次素材请求都会先等待 CDN 超时才回退本地
+    // 离线素材唯一入口：全部素材从设备内 AssetServer（rawfile）读取；
+    // 官方 CDN web store 已在 legacy-storage 中移除，不再有网络回退
     storage.addHelper(new WebStorageHelper(storage), 1);
 };
 

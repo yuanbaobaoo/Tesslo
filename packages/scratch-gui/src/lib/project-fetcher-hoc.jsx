@@ -145,10 +145,9 @@ const ProjectFetcherHOC = function (WrappedComponent) {
         reduxProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         setProjectId: PropTypes.func
     };
-    ProjectFetcherComponent.defaultProps = {
-        assetHost: 'https://assets.scratch.mit.edu',
-        projectHost: 'https://projects.scratch.mit.edu'
-    };
+    // Tesslo 全离线运行：项目与素材均由设备内 storage helper 提供，
+    // 不再提供默认的官方 CDN assetHost/projectHost
+    ProjectFetcherComponent.defaultProps = {};
 
     const mapStateToProps = state => ({
         storage: state.scratchGui.config.storage,

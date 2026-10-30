@@ -92,9 +92,10 @@ const getAssetTypeForFileExtension = function (fileExtension) {
  * @returns {LibraryItem.PropTypes.icons} - an `imageSource` or array of them
  */
 const getItemIcons = function (item) {
+    // Tesslo 注入的本地素材服务器 origin（见 apps/tesslo/web/src/index.jsx）；
+    // 不再回退官方 CDN——离线环境下命中不了，联网时也不应向外部服务发请求
     const assetOrigin = () =>
-    (typeof window !== 'undefined' && window.__TESSLO_ASSET_ORIGIN__) ||
-    'https://cdn.assets.scratch.mit.edu';
+    (typeof window !== 'undefined' && window.__TESSLO_ASSET_ORIGIN__) || '';
 
 const costumes = (item.json && item.json.costumes) || item.costumes;
     if (costumes) {
