@@ -10,9 +10,9 @@
     "name": "OpenHarmony.NET.Runtime",
     "version": "0.0.0-alpha.19",
     "sha256": "4e8dfd6eafdd3c3058a89bfba1d6c03398e654f753730091ec3edc2f39a90154",
-    "path": "packages/scratch-link/dotnet/ohos-net/runtime/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler"
+    "path": "packages/scratch-link/ohos-net/runtime/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler"
   },
-  "toolchainPath": "packages/scratch-link/dotnet/ohos-net/toolchain/host-portable",
+  "toolchainPath": "packages/scratch-link/ohos-net/toolchain/host-portable",
   "localChanges": [
     "OpenHarmonySdkResolver.csproj retargeted from net10.0 to net9.0 so a single .NET 9 SDK is enough."
   ],

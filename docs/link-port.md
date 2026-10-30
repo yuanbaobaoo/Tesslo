@@ -15,8 +15,8 @@ packages/scratch-link
   dotnet/Tesslo.Link       协议、WebSocket、BLE 命令客户端
   dotnet/Tesslo.Link.Native C 导出（TessloLinkStart/Stop/Version）
   dotnet/Tesslo.Link.Server 主机运行入口（开发调试）
-  dotnet/napi              NAPI 桥，加载 C# 库并导出 start/stop/version
-  dotnet/ohos-net          OHOS NativeAOT 运行时与工具链
+  napi              NAPI 桥，加载 C# 库并导出 start/stop/version
+  ohos-net          OHOS NativeAOT 运行时与工具链
 ```
 
 构建产物：

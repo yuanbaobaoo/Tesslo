@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishAot>true</PublishAot>
+    <NativeLib>Shared</NativeLib>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>ScratchLinkOhos</AssemblyName>
+    <RootNamespace>ScratchLink.Ohos</RootNamespace>
+    <StripSymbols>false</StripSymbols>
+  </PropertyGroup>
+
+  <!--
+    scratch-link-common 以上游共享项目（shproj）的方式编译进本项目——与
+    scratch-link-win / scratch-link-mac 的引用方式一致：同 assembly，
+    common 内的 internal API（如 ScratchLinkApp.Builder）对平台层可见。
+  -->
+  <ItemGroup>
+    <Compile Include="../scratch-link-common/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fleck" Version="1.2.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
+  </ItemGroup>
+
+  <Import Project="../ohos-net/toolchain/host-portable/OpenHarmonyRuntimePack.targets"
+          Condition="'$(OpenHarmonyAbi)' != ''" />
+  <Import Project="../ohos-net/toolchain/host-portable/OpenHarmonyCross.targets"
+          Condition="'$(OpenHarmonyAbi)' != ''" />
+</Project>

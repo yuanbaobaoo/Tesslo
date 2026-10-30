@@ -59,8 +59,8 @@ const nativeRoot = fs.existsSync(path.join(sdkRoot, 'openharmony/native'))
     ? path.join(sdkRoot, 'openharmony/native')
     : path.join(sdkRoot, 'native');
 const clang = path.join(nativeRoot, 'llvm/bin/clang++');
-const shimSource = path.join(repoRoot, 'packages/scratch-link/dotnet/napi/tesslo_link_napi.cpp');
-const shimOutput = path.join(repoRoot, 'packages/scratch-link/dotnet/napi/libtesslolink.so');
+const shimSource = path.join(repoRoot, 'packages/scratch-link/napi/tesslo_link_napi.cpp');
+const shimOutput = path.join(repoRoot, 'packages/scratch-link/napi/libtesslolink.so');
 const shim = spawnSync(
     clang,
     [
