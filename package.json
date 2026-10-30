@@ -7,8 +7,7 @@
   "packageManager": "pnpm@11.21.0",
   "scripts": {
     "build": "pnpm build:editor && pnpm build:web",
-    "build:editor": "pnpm build:sb1 && pnpm build:blocks && pnpm build:storage && pnpm build:svg-renderer && pnpm build:render && pnpm build:vm && pnpm build:audio && pnpm build:l10n && pnpm build:paint && pnpm build:gui",
-    "build:sb1": "pnpm --filter scratch-sb1-converter build",
+    "build:editor": "pnpm build:blocks && pnpm build:storage && pnpm build:svg-renderer && pnpm build:render && pnpm build:vm && pnpm build:audio && pnpm build:l10n && pnpm build:paint && pnpm build:gui",
     "build:blocks": "pnpm --filter scratch-blocks build",
     "build:storage": "pnpm --filter scratch-storage build",
     "build:svg-renderer": "pnpm --filter @scratch/scratch-svg-renderer exec webpack",

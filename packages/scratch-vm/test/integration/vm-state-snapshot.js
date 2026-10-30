@@ -35,7 +35,6 @@ const FIXTURES = fs.readdirSync(FIXTURES_DIR, {recursive: true, withFileTypes: t
         'missing_sound.sb3',
         'missing_svg.sb2',
         'missing_svg.sb3',
-        'sb2-from-sb1-missing-backdrop-image.sb2',
         'visible-video-monitor-and-video-blocks.sb2',
         'visible-video-monitor-no-other-video-blocks.sb2',
         'load-extensions/music-visible-monitor-no-blocks.sb2',
