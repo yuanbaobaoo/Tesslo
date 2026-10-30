@@ -8,7 +8,7 @@
 | HarmonyOS Command Line Tools 26 | hvigor、hdc、Native SDK |
 | JDK 21 | hvigor 与 devecocli 签名 |
 | .NET SDK 9.0.104 | C# Link 与 NativeAOT |
-| `media/fetched/` | 离线素材库 |
+| `media/fetched/` | 离线素材库（已入库，无需联网） |
 
 `scripts/ohos-common.mjs` 自动探测命令行工具：`OHOS_COMMAND_LINE_TOOLS_ROOT`、
 `~/command-line-tools`、`/Users/Shared/local/ohos/command-line-tools*`，最后是
@@ -104,4 +104,5 @@ pnpm build:link:csharp
 pnpm build:hap
 ```
 
-构建过程不访问上游 GitHub 仓库。唯一需要预先准备的是 `media/fetched` 素材。
+构建过程不访问任何素材 CDN 或上游 GitHub 仓库；`media/fetched` 的 1328 个
+素材已随仓库提交，checkout 后即可离线构建。

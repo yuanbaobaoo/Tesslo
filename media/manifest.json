@@ -1,6 +1,7 @@
 {
   "source": "scratch-desktop fetchMediaLibraryAssets (mirror cache)",
+  "committed": true,
   "files": 1328,
   "bytes": 56819338,
-  "note": "Fetched assets are not committed; place them here before an offline build."
+  "note": "Assets are committed under media/fetched and copied into the HAP at build time; no network fetch."
 }

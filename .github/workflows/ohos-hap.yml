@@ -19,12 +19,14 @@ on:
 permissions:
   contents: write
 
+# 同一 ref 只保留最新一次构建；新 push 会取消旧 run，避免排队浪费 runner。
+concurrency:
+  group: ohos-hap-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # 可选：任意 command-line-tools 整包直链（http/file），设置后优先于分卷源。
   OHOS_CLT_URL: ${{ vars.OHOS_CLT_URL }}
-  # 可选：ohos-net runtime pack / 离线素材包的自备直链，覆盖下方默认源。
-  OHOS_NET_PACK_URL: ${{ vars.OHOS_NET_PACK_URL }}
-  OHOS_MEDIA_URL: ${{ vars.OHOS_MEDIA_URL }}
 
 jobs:
   build:
@@ -97,6 +99,7 @@ jobs:
           set -e
           test -x "$OHOS_COMMAND_LINE_TOOLS_ROOT/bin/hvigorw"
           test -x "$OHOS_COMMAND_LINE_TOOLS_ROOT/bin/ohpm"
+          test -x "$OHOS_SDK_ROOT/openharmony/toolchains/hdc"
           test -d "$OHOS_SDK_ROOT/openharmony/native"
           "$OHOS_COMMAND_LINE_TOOLS_ROOT/bin/ohpm" -v
           cd "$RUNNER_TEMP"
@@ -106,35 +109,38 @@ jobs:
       - name: Fetch ohos-net runtime pack
         run: |
           set -e
-          # vendored OpenHarmony NativeAOT runtime pack（arm64-v8a），见 ohos-net.lock.json。
-          # 目录不入库（.gitignore），打包托管在 GitCode tesslo-build-assets Release。
+          # 首选 GitHub Release 资产（由维护者从 GitCode tesslo-build-assets 转存）。
+          # 该 tarball 与本地 vendored runtime 目录逐字节一致，SHA-256 已锁定。
+          TARGET="packages/scratch-link/ohos-net/runtime/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler"
           EXPECTED_SHA256="26f438553bd845a48ed5f667c45f2fde6e45c2df10b8f88a1ef51db771cc80ed"
-          URL="${OHOS_NET_PACK_URL:-https://gitcode.com/yuanbaobaoo/Tesslo/releases/download/tesslo-build-assets/ohos-net-runtime-pack-linux-musl-arm64.tar.zst}"
-          curl -fL --retry 3 "$URL" -o /tmp/runtime-pack.tar.zst
-          echo "$EXPECTED_SHA256  /tmp/runtime-pack.tar.zst" | sha256sum -c -
+          URL="https://github.com/yuanbaobaoo/Tesslo/releases/download/tesslo-build-assets/ohos-net-runtime-pack-linux-musl-arm64.tar.zst"
+          rm -rf "$TARGET"
           mkdir -p packages/scratch-link/ohos-net/runtime
-          tar --zstd -xf /tmp/runtime-pack.tar.zst -C packages/scratch-link/ohos-net/runtime
-          ls packages/scratch-link/ohos-net/runtime/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler
-
-      - name: Fetch offline media library
-        run: |
-          # media/fetched（1328 个素材，~57MB，统计见 media/manifest.json）不入库。
-          # 下载失败时：tag 构建（发版）必须失败；手动触发则降级为空素材库继续。
-          set -e
-          EXPECTED_SHA256="b162600b1ab2c2004a01da78b4dd76c0c59289bb08adb1a39099e3f02b764fb6"
-          URL="${OHOS_MEDIA_URL:-https://gitcode.com/yuanbaobaoo/Tesslo/releases/download/tesslo-build-assets/media-fetched.tar.zst}"
-          mkdir -p media/fetched
-          if ! curl -fL --retry 3 "$URL" -o /tmp/media.tar.zst; then
-            if [ "$GITHUB_REF_TYPE" = "tag" ]; then
-              echo "::error::离线素材包下载失败，tag 构建不允许空素材库"
-              exit 1
-            fi
-            echo "::warning::离线素材包下载失败，将以空素材库继续（库内缩略图不可用）"
-            exit 0
+          if curl -fL --retry 2 --connect-timeout 15 "$URL" -o /tmp/runtime-pack.tar.zst; then
+            echo "$EXPECTED_SHA256  /tmp/runtime-pack.tar.zst" | sha256sum -c -
+            tar --zstd -xf /tmp/runtime-pack.tar.zst -C packages/scratch-link/ohos-net/runtime
+          else
+            # 兜底：GitHub 资产尚未上传时，用公开 NuGet 包（同一份 runtime pack）继续构建。
+            echo "::warning::GitHub Release runtime pack 不可用，回退到公开 NuGet 包"
+            NUGET_SHA256="4e8dfd6eafdd3c3058a89bfba1d6c03398e654f753730091ec3edc2f39a90154"
+            NUGET_URL="https://api.nuget.org/v3-flatcontainer/openharmony.net.runtime/0.0.0-alpha.19/openharmony.net.runtime.0.0.0-alpha.19.nupkg"
+            curl -fL --retry 3 "$NUGET_URL" -o /tmp/ohos-runtime.nupkg
+            echo "$NUGET_SHA256  /tmp/ohos-runtime.nupkg" | sha256sum -c -
+            rm -rf /tmp/ohos-runtime
+            unzip -q /tmp/ohos-runtime.nupkg \
+              'build/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler/*' -d /tmp/ohos-runtime
+            mv /tmp/ohos-runtime/build/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler "$TARGET"
           fi
-          echo "$EXPECTED_SHA256  /tmp/media.tar.zst" | sha256sum -c -
-          tar --zstd -xf /tmp/media.tar.zst -C media/fetched
-          echo "media files: $(find media/fetched -type f | wc -l)"
+          test -f "$TARGET/sdk/System.Private.CoreLib.dll"
+
+      # media/fetched 的 1328 个素材已随仓库提交，构建直接使用，不访问 CDN。
+      - name: Verify offline media
+        run: |
+          count="$(find media/fetched -type f | wc -l)"
+          bytes="$(find media/fetched -type f -printf '%s\n' | awk '{s+=$1} END{print s}')"
+          echo "media/fetched: $count files, $bytes bytes"
+          test "$count" -eq 1328
+          test "$bytes" -eq 56819338
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
