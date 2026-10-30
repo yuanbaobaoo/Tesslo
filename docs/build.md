@@ -5,7 +5,7 @@
 | 工具 | 版本 / 来源 | 用途 |
 | --- | --- | --- |
 | Node.js + pnpm | Node ≥ 20；pnpm 11.21.0 | workspace 与脚本 |
-| HarmonyOS Command Line Tools | 26.0.0.851；[Release `tools`](https://github.com/yuanbaobaoo/Tesslo/releases/tag/tools) | hvigor、hdc、Native SDK |
+| HarmonyOS Command Line Tools | 26.0.0.851；CI 使用 [Release `tools`](https://github.com/yuanbaobaoo/Tesslo/releases/tag/tools) 的 Linux 分卷 | hvigor、hdc、Native SDK |
 | JDK | 21 | hvigor 与 devecocli 签名 |
 | .NET SDK | 9.0.104 | C# Link 与 NativeAOT |
 | ohos-net runtime pack | Release `tools` 的 `ohos-net-runtime-pack-linux-musl-arm64.tar.zst` | NativeAOT 目标运行库 |

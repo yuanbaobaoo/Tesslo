@@ -33,15 +33,15 @@ micro:bit、LEGO WeDo 2.0 等蓝牙外设。
 | 构建主机 | macOS 14+（Apple Silicon 实测）或 Linux x64 | Windows 未验证 |
 | Node.js | ≥ 20（CI 使用 22） | workspace 与构建脚本 |
 | pnpm | 11.21.0 | 包管理与脚本入口 |
-| HarmonyOS Command Line Tools | 26.0.0.851（hvigor 6.26.1） | hvigor、hdc、Native SDK |
+| HarmonyOS Command Line Tools | 26.0.0.851 | hvigor、hdc、Native SDK |
 | JDK | 21 | hvigor、devecocli 签名 |
 | .NET SDK | 9.0.104 | C# Scratch Link / NativeAOT |
+| ohos-net runtime pack | [Release `tools`](https://github.com/yuanbaobaoo/Tesslo/releases/tag/tools) | NativeAOT 目标运行库 |
 | 设备调试 | HarmonyOS 设备 + hdc | `pnpm dev:ohos` 安装与启动 |
 
-不需要安装 DevEco Studio：构建脚本直接调用 command-line-tools。CI 与本地构建
-所需的 CLT 分卷、ohos-net runtime pack 发布在
-[GitHub Release `tools`](https://github.com/yuanbaobaoo/Tesslo/releases/tag/tools)，
-CI 会自动下载并校验 SHA-256。
+不需要安装 DevEco Studio：构建脚本直接调用 command-line-tools。CI 从
+GitHub Release `tools` 下载 Linux 分卷；本地使用本机安装的 CLT 26。
+ohos-net runtime pack 由本地/CI 共用，也从 `tools` 下载并校验 SHA-256。
 
 ## 仓库结构
 
