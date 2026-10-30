@@ -25,23 +25,54 @@ micro:bit、LEGO WeDo 2.0 等蓝牙外设。
   扫描/连接时向用户申请。
 - **完整可复现构建**：从编辑器源码到签名 HAP 全流程脚本化。
 
+## 环境要求
+
+| 项目 | 版本 / 要求 | 用途 |
+| --- | --- | --- |
+| 目标系统 | HarmonyOS 7（API 26，`compatibleSdkVersion 26.0.0`） | HAP 运行环境 |
+| 构建主机 | macOS 14+（Apple Silicon 实测）或 Linux x64 | Windows 未验证 |
+| Node.js | ≥ 20（CI 使用 22） | workspace 与构建脚本 |
+| pnpm | 11.21.0 | 包管理与脚本入口 |
+| HarmonyOS Command Line Tools | 26.0.0.851（hvigor 6.26.1） | hvigor、hdc、Native SDK |
+| JDK | 21 | hvigor、devecocli 签名 |
+| .NET SDK | 9.0.104 | C# Scratch Link / NativeAOT |
+| 设备调试 | HarmonyOS 设备 + hdc | `pnpm dev:ohos` 安装与启动 |
+
+不需要安装 DevEco Studio：构建脚本直接调用 command-line-tools。CI 与本地构建
+所需的 CLT 分卷、ohos-net runtime pack 发布在
+[GitHub Release `tools`](https://github.com/yuanbaobaoo/Tesslo/releases/tag/tools)，
+CI 会自动下载并校验 SHA-256。
+
 ## 仓库结构
 
 ```text
-packages/          Scratch 编辑器源码（scratch-gui / vm / blocks / render ...）
-apps/tesslo
-  assets/fetched/  离线素材库（已入库，构建时硬链接进 rawfile）
-  web/             编辑器 Web 入口与打包
-  entry/           HAP entry 模块（ArkTS：ArkWeb 页面、BLE 桥、素材服务）
-  AppScope/        HAP 应用配置
-packages/scratch-link   Scratch Link（上游 common + OHOS 平台实现，NativeAOT + NAPI）
-docs/              技术文档与图片资源
+packages/
+├── scratch-gui/ scratch-vm/ scratch-blocks/ scratch-render/ ...
+└── scratch-link/              Scratch Link（common + OHOS 平台实现 + ohos-net 工具链）
+apps/tesslo/
+├── assets/fetched/            离线素材（1328 个文件，已入库）
+├── web/                       Scratch 编辑器 Web 入口与 webpack 打包
+├── entry/                     HAP entry 模块（ArkTS：ArkWeb、BLE 桥、素材服务）
+└── AppScope/                  HAP 应用配置
+scripts/                       构建、HAP、C# Link、设备脚本
+tests/                         Link 协议一致性测试
+docs/                          架构、移植、构建与真机验证文档
+.github/workflows/             Test 与 OHOS HAP CI
 ```
+
+构建产物与外部依赖不提交：
+
+- `apps/tesslo/entry/src/main/resources/rawfile/`：由 `pnpm build:hap` 生成，
+  包含 Web bundle 和硬链接进来的离线素材；
+- `packages/scratch-link/ohos-net/runtime/`：NativeAOT runtime pack，从
+  Release `tools` 下载；
+- `apps/tesslo/entry/libs/`、`*.hap`、`node_modules/`、`oh_modules/` 等。
 
 ## 快速开始
 
-前置条件：Node.js ≥ 20 与 pnpm 11、HarmonyOS Command Line Tools 26、
-JDK 21、.NET SDK 9.0.104；离线素材已随仓库提交，无需额外准备。
+前置条件见上方「环境要求」。离线素材已随仓库提交；本地构建需要先安装
+CLT 26 与 .NET SDK 9.0.104，并把 `tools` Release 里的 runtime pack 解压到
+`packages/scratch-link/ohos-net/runtime/`。
 
 ```sh
 pnpm install               # workspace 依赖

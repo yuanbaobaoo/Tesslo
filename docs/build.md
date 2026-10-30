@@ -2,13 +2,18 @@
 
 ## 前置条件
 
-| 工具 | 用途 |
-| --- | --- |
-| Node.js + pnpm 11 | workspace 与脚本 |
-| HarmonyOS Command Line Tools 26 | hvigor、hdc、Native SDK |
-| JDK 21 | hvigor 与 devecocli 签名 |
-| .NET SDK 9.0.104 | C# Link 与 NativeAOT |
-| `apps/tesslo/assets/fetched/` | 离线素材库（已入库，无需联网） |
+| 工具 | 版本 / 来源 | 用途 |
+| --- | --- | --- |
+| Node.js + pnpm | Node ≥ 20；pnpm 11.21.0 | workspace 与脚本 |
+| HarmonyOS Command Line Tools | 26.0.0.851；[Release `tools`](https://github.com/yuanbaobaoo/Tesslo/releases/tag/tools) | hvigor、hdc、Native SDK |
+| JDK | 21 | hvigor 与 devecocli 签名 |
+| .NET SDK | 9.0.104 | C# Link 与 NativeAOT |
+| ohos-net runtime pack | Release `tools` 的 `ohos-net-runtime-pack-linux-musl-arm64.tar.zst` | NativeAOT 目标运行库 |
+| `apps/tesslo/assets/fetched/` | 已入库 | 离线素材库（无需联网） |
+
+CLT 分卷与 runtime pack 都从 GitHub Release `tools` 下载并做 SHA-256 校验，
+CI 自动完成。本地构建时需要把 runtime pack 解压到
+`packages/scratch-link/ohos-net/runtime/`。
 
 `scripts/ohos-common.mjs` 自动探测命令行工具：`OHOS_COMMAND_LINE_TOOLS_ROOT`、
 `~/command-line-tools`、`/Users/Shared/local/ohos/command-line-tools*`，最后是

@@ -71,10 +71,10 @@ jobs:
         run: |
           set -e
           mkdir -p /tmp/clt && cd /tmp/clt
-          # 官方原包 26.0.0.851（API 26），分卷托管在 GitCode ohos-tools Release；
-          # cat 合并为字节级无损拼接。与 zcode-ohos CI 共用同一份公开源。
+          # 官方原包 26.0.0.851（API 26），分卷托管在本仓 GitHub Release tools；
+          # cat 合并为字节级无损拼接。
           EXPECTED_SHA256="ab604bd92721d5cbcafd154e6461d46b9f1b105e7b89eab04a9d046681198082"
-          BASE="https://gitcode.com/yuanbaobaoo/zcode-ohos/releases/download/ohos-tools"
+          BASE="https://github.com/yuanbaobaoo/Tesslo/releases/download/tools"
           if [ -n "$OHOS_CLT_URL" ]; then
             curl -fL --retry 3 "$OHOS_CLT_URL" -o clt.zip
           else
@@ -109,28 +109,15 @@ jobs:
       - name: Fetch ohos-net runtime pack
         run: |
           set -e
-          # 首选 GitHub Release 资产（由维护者从 GitCode tesslo-build-assets 转存）。
-          # 该 tarball 与本地 vendored runtime 目录逐字节一致，SHA-256 已锁定。
+          # runtime pack 来自本仓 GitHub Release tools，SHA-256 已锁定。
           TARGET="packages/scratch-link/ohos-net/runtime/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler"
           EXPECTED_SHA256="26f438553bd845a48ed5f667c45f2fde6e45c2df10b8f88a1ef51db771cc80ed"
-          URL="https://github.com/yuanbaobaoo/Tesslo/releases/download/tesslo-build-assets/ohos-net-runtime-pack-linux-musl-arm64.tar.zst"
+          URL="https://github.com/yuanbaobaoo/Tesslo/releases/download/tools/ohos-net-runtime-pack-linux-musl-arm64.tar.zst"
+          curl -fL --retry 3 "$URL" -o /tmp/runtime-pack.tar.zst
+          echo "$EXPECTED_SHA256  /tmp/runtime-pack.tar.zst" | sha256sum -c -
           rm -rf "$TARGET"
           mkdir -p packages/scratch-link/ohos-net/runtime
-          if curl -fL --retry 2 --connect-timeout 15 "$URL" -o /tmp/runtime-pack.tar.zst; then
-            echo "$EXPECTED_SHA256  /tmp/runtime-pack.tar.zst" | sha256sum -c -
-            tar --zstd -xf /tmp/runtime-pack.tar.zst -C packages/scratch-link/ohos-net/runtime
-          else
-            # 兜底：GitHub 资产尚未上传时，用公开 NuGet 包（同一份 runtime pack）继续构建。
-            echo "::warning::GitHub Release runtime pack 不可用，回退到公开 NuGet 包"
-            NUGET_SHA256="4e8dfd6eafdd3c3058a89bfba1d6c03398e654f753730091ec3edc2f39a90154"
-            NUGET_URL="https://api.nuget.org/v3-flatcontainer/openharmony.net.runtime/0.0.0-alpha.19/openharmony.net.runtime.0.0.0-alpha.19.nupkg"
-            curl -fL --retry 3 "$NUGET_URL" -o /tmp/ohos-runtime.nupkg
-            echo "$NUGET_SHA256  /tmp/ohos-runtime.nupkg" | sha256sum -c -
-            rm -rf /tmp/ohos-runtime
-            unzip -q /tmp/ohos-runtime.nupkg \
-              'build/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler/*' -d /tmp/ohos-runtime
-            mv /tmp/ohos-runtime/build/runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler "$TARGET"
-          fi
+          tar --zstd -xf /tmp/runtime-pack.tar.zst -C packages/scratch-link/ohos-net/runtime
           test -f "$TARGET/sdk/System.Private.CoreLib.dll"
 
       # apps/tesslo/assets/fetched 的 1328 个素材已随仓库提交，构建直接使用，不访问 CDN。
