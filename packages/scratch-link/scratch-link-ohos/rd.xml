@@ -1,0 +1,9 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <!--
+    NativeAOT 反射根：ScratchLinkApp.Builder 通过 DI 容器按 Type 注册并反射构造
+    SessionManager / GattHelpers 实例，ilc 无法静态可见这些构造器，必须整体保留。
+  -->
+  <Application>
+    <Assembly Name="ScratchLinkOhos" Dynamic="Required All" />
+  </Application>
+</Directives>

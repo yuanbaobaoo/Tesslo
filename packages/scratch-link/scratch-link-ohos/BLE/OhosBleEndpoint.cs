@@ -1,18 +1,28 @@
-// GATT endpoint（service + characteristic 对）的 OHOS 实现。
-// read/write/notifications 全部经由设备内 BLE 桥转发。
+// GATT endpoint（service + characteristic 对）的 OHOS 实现：
+// read/write/notifications 经设备内 BLE 桥转发。
 
 namespace ScratchLink.Ohos.BLE;
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using ScratchLink.BLE;
 
 internal sealed class OhosBleEndpoint : IBLEEndpoint
 {
+    private readonly OhosBleClient bridge;
+    private readonly SemaphoreSlim bridgeLock;
     private readonly string deviceId;
 
-    public OhosBleEndpoint(string deviceId, string serviceId, string characteristicId)
+    public OhosBleEndpoint(
+        OhosBleClient bridge,
+        SemaphoreSlim bridgeLock,
+        string deviceId,
+        string serviceId,
+        string characteristicId)
     {
+        this.bridge = bridge;
+        this.bridgeLock = bridgeLock;
         this.deviceId = deviceId;
         this.ServiceId = serviceId;
         this.CharacteristicId = characteristicId;
@@ -25,30 +35,63 @@ internal sealed class OhosBleEndpoint : IBLEEndpoint
     public string CharacteristicId { get; }
 
     /// <inheritdoc/>
-    public Task<int> Write(byte[] buffer, bool? withResponse)
+    public async Task<int> Write(byte[] buffer, bool? withResponse)
     {
-        // TODO(bridge): {"op":"write", deviceId, serviceId, characteristicId, value(base64)}
-        throw new NotImplementedException("OHOS BLE bridge write is not wired up yet");
+        await this.bridgeLock.WaitAsync();
+        try
+        {
+            return await this.bridge.WriteAsync(
+                this.deviceId,
+                this.ServiceId,
+                this.CharacteristicId,
+                buffer,
+                withResponse ?? true);
+        }
+        finally
+        {
+            this.bridgeLock.Release();
+        }
     }
 
     /// <inheritdoc/>
-    public Task<byte[]> Read()
+    public async Task<byte[]> Read()
     {
-        // TODO(bridge): {"op":"read", deviceId, serviceId, characteristicId}
-        throw new NotImplementedException("OHOS BLE bridge read is not wired up yet");
+        await this.bridgeLock.WaitAsync();
+        try
+        {
+            return await this.bridge.ReadAsync(this.deviceId, this.ServiceId, this.CharacteristicId);
+        }
+        finally
+        {
+            this.bridgeLock.Release();
+        }
     }
 
     /// <inheritdoc/>
-    public Task StartNotifications(Action<byte[]> notifier)
+    public async Task StartNotifications(Action<byte[]> notifier)
     {
-        // TODO(bridge): {"op":"subscribe", ...} 并把桥事件分发给 notifier。
-        throw new NotImplementedException("OHOS BLE bridge notifications are not wired up yet");
+        await this.bridgeLock.WaitAsync();
+        try
+        {
+            await this.bridge.SubscribeAsync(this.deviceId, this.ServiceId, this.CharacteristicId, notifier);
+        }
+        finally
+        {
+            this.bridgeLock.Release();
+        }
     }
 
     /// <inheritdoc/>
-    public Task StopNotifications()
+    public async Task StopNotifications()
     {
-        // TODO(bridge): {"op":"unsubscribe", ...}
-        throw new NotImplementedException("OHOS BLE bridge notifications are not wired up yet");
+        await this.bridgeLock.WaitAsync();
+        try
+        {
+            await this.bridge.StopNotificationsAsync();
+        }
+        finally
+        {
+            this.bridgeLock.Release();
+        }
     }
 }

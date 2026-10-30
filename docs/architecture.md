@@ -17,7 +17,7 @@ apps/tesslo
     src/main/ets/ble                                       BLE TCP 桥
     src/main/ets/assets                                    离线素材 HTTP 服务
   AppScope/                                                HAP 应用配置
-packages/scratch-link                                      C# Scratch Link（NAPI）
+packages/scratch-link                                      Scratch Link（上游 common + OHOS 平台实现）
 ```
 
 ## 运行链路

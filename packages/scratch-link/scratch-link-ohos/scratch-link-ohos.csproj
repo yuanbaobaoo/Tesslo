@@ -26,6 +26,10 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
+
   <Import Project="../ohos-net/toolchain/host-portable/OpenHarmonyRuntimePack.targets"
           Condition="'$(OpenHarmonyAbi)' != ''" />
   <Import Project="../ohos-net/toolchain/host-portable/OpenHarmonyCross.targets"

@@ -33,7 +33,7 @@ apps/tesslo
   web/             编辑器 Web 入口与打包
   entry/           HAP entry 模块（ArkTS：ArkWeb 页面、BLE 桥、素材服务）
   AppScope/        HAP 应用配置
-packages/scratch-link   C# Scratch Link（NativeAOT + NAPI）
+packages/scratch-link   Scratch Link（上游 common + OHOS 平台实现，NativeAOT + NAPI）
 docs/              技术文档与图片资源
 media/fetched/     离线素材库（不入库，构建前准备）
 ```

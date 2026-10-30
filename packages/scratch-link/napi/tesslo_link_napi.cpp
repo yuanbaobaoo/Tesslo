@@ -23,8 +23,8 @@ std::string library_path() {
     }
     std::string path(info.dli_fname);
     const auto slash = path.find_last_of('/');
-    if (slash == std::string::npos) return "TessloLinkNative.so";
-    return path.substr(0, slash + 1) + "TessloLinkNative.so";
+    if (slash == std::string::npos) return "ScratchLinkOhos.so";
+    return path.substr(0, slash + 1) + "ScratchLinkOhos.so";
 }
 
 bool load_csharp() {

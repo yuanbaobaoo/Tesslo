@@ -2,4 +2,6 @@
 
 namespace ScratchLink.Ohos.BLE;
 
-internal sealed record OhosBlePeripheral(string DeviceId, string Name, int Rssi);
+using System.Collections.Generic;
+
+internal sealed record OhosBlePeripheral(string DeviceId, string Name, int Rssi, IReadOnlyList<string> Services);

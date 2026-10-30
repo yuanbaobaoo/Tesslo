@@ -159,7 +159,7 @@ export function stageWebPayload() {
 
 export function ensureLink() {
     const dir = path.join(hapRoot, 'entry/libs/arm64-v8a');
-    for (const name of ['libtesslolink.so', 'TessloLinkNative.so']) {
+    for (const name of ['libtesslolink.so', 'ScratchLinkOhos.so']) {
         if (!fs.existsSync(path.join(dir, name))) {
             throw new Error(`${name} is missing; run pnpm build:link:csharp first.`);
         }

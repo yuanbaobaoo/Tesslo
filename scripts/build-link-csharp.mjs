@@ -29,6 +29,9 @@ if (!sdkRoot) {
 const env = {
     ...process.env,
     DOTNET_ROOT: dotnetRoot,
+    // msbuild 用 DOTNET_HOST_PATH 定位宿主 dotnet；不设会解析到系统里
+    // 其他版本（如 10.x），导致 ohos-net 的 SDK resolver 启动失败（exit 150）
+    DOTNET_HOST_PATH: dotnet,
     PATH: `${dotnetRoot}${path.delimiter}${process.env.PATH}`
 };
 const publish = project => {
@@ -50,10 +53,10 @@ const publish = project => {
     if (result.status !== 0) process.exit(result.status ?? 1);
 };
 
-const serverProject = path.join(repoRoot, 'packages/scratch-link/dotnet/Tesslo.Link.Server/Tesslo.Link.Server.csproj');
-const nativeProject = path.join(repoRoot, 'packages/scratch-link/dotnet/Tesslo.Link.Native/Tesslo.Link.Native.csproj');
-publish(serverProject);
-publish(nativeProject);
+// scratch-link-ohos：基于上游 scratch-link-common 的 OHOS 平台实现，
+// 产物 ScratchLinkOhos.so（含 NAPI 宿主导出 TessloLinkStart/Stop/Version）
+const ohosProject = path.join(repoRoot, 'packages/scratch-link/scratch-link-ohos/scratch-link-ohos.csproj');
+publish(ohosProject);
 
 const nativeRoot = fs.existsSync(path.join(sdkRoot, 'openharmony/native'))
     ? path.join(sdkRoot, 'openharmony/native')
@@ -85,13 +88,14 @@ const deployDir = path.join(hapRoot, 'entry/libs/arm64-v8a');
 fs.mkdirSync(deployDir, {recursive: true});
 const nativeOutput = path.join(
     repoRoot,
-    'packages/scratch-link/dotnet/Tesslo.Link.Native/bin/Release/net9.0/linux-musl-arm64/publish/TessloLinkNative.so'
+    'packages/scratch-link/scratch-link-ohos/bin/Release/net9.0/linux-musl-arm64/publish/ScratchLinkOhos.so'
 );
 if (!fs.existsSync(nativeOutput)) {
     console.error(`[link:csharp] expected artifact not found: ${nativeOutput}`);
     process.exit(1);
 }
-fs.copyFileSync(nativeOutput, path.join(deployDir, 'TessloLinkNative.so'));
+fs.rmSync(path.join(deployDir, 'TessloLinkNative.so'), {force: true});
+fs.copyFileSync(nativeOutput, path.join(deployDir, 'ScratchLinkOhos.so'));
 fs.copyFileSync(shimOutput, path.join(deployDir, 'libtesslolink.so'));
 
 const libcxx = path.join(nativeRoot, 'llvm/lib/aarch64-linux-ohos/libc++_shared.so');

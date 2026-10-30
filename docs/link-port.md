@@ -9,52 +9,54 @@ TCP 命令桥。
 
 ## 组成
 
+`packages/scratch-link` 通过 subtree merge 完整引入上游仓库
+（scratchfoundation/scratch-link），平台实现与上游目录平级：
+
 ```text
 packages/scratch-link
-  src/                     TypeScript Link：Node 环境回退
-  dotnet/Tesslo.Link       协议、WebSocket、BLE 命令客户端
-  dotnet/Tesslo.Link.Native C 导出（TessloLinkStart/Stop/Version）
-  dotnet/Tesslo.Link.Server 主机运行入口（开发调试）
-  napi              NAPI 桥，加载 C# 库并导出 start/stop/version
-  ohos-net          OHOS NativeAOT 运行时与工具链
+  scratch-link-common/   上游共享层：Session/JSON-RPC/Fleck WebSocket（零改动，
+                         以共享源码方式编译进 scratch-link-ohos）
+  scratch-link-win/      上游 Windows 实现（保留不构建，供对照）
+  scratch-link-mac/      上游 macOS 实现（保留不构建，供对照）
+  scratch-link-ohos/     OHOS 平台实现：SessionManager/GattHelpers/BLE 会话与
+                         endpoint、NAPI 宿主导出（TessloLinkStart/Stop/Version）
+  napi/                  NAPI 桥，加载 ScratchLinkOhos.so 并导出 start/stop/version
+  ohos-net/              OHOS NativeAOT 运行时与工具链
+  src/                   Node 版协议服务器：一致性测试与主机调试
 ```
 
 构建产物：
 
 ```text
-TessloLinkNative.so   NativeAOT 共享库（linux-musl-arm64）
+ScratchLinkOhos.so    NativeAOT 共享库（linux-musl-arm64，含上游 common）
 libtesslolink.so      NAPI 模块，被 ArkTS import
 ```
 
 两者与 `libc++_shared.so` 一起部署到
 `apps/tesslo/entry/libs/arm64-v8a/`。
 
+同步上游：`git fetch scratch-link && git merge -Xsubtree=packages/scratch-link scratch-link/main`。
+
 ## 协议
 
-- WebSocket 端点：`/scratch/ble` 与 `/scratch/bt`，默认端口 `20111`。
-- 协议版本：`1.3`。
-- 帧格式：标准 WebSocket 文本帧，每条消息一个 JSON-RPC 对象。
-- 已实现方法：`getVersion`、`discover`、`connect`、`getServices`、`read`、
-  `write`、`startNotifications`、`stopNotifications`。
-- `discover` 要求至少一个 filter，支持 `name`、`namePrefix`、`services`；
-  扫描结果以 `didDiscoverPeripheral` 通知逐条返回。
-- 通知以 `characteristicDidChange` 返回，值使用 base64。
+协议层全部来自上游 `scratch-link-common`（Session/SessionManager/JsonRpc/
+WebSocketListener/Fleck），OHOS 侧只实现平台接缝。协议版本随上游
+（`getVersion` 由上游 Session 返回）。
 
-握手、帧编解码和 SHA-1 都在 C# 内实现。OHOS 运行时不提供 `libcrypto.so`，
-因此 SHA-1 采用托管实现（`Sha1.cs`），不依赖 OpenSSL。
+- WebSocket 端点：`/scratch/ble`（`/scratch/bt` 暂落到基础 Session，见边界）。
+- 端口 `20111`（上游 ScratchLinkApp 固定）。
+- 过滤、GATT 黑名单、编码语义、错误码均由上游实现，随上游演进。
 
 ## 线程模型
 
-服务器使用阻塞 socket：
-
-- 主线程 `Accept`，每个客户端一个后台线程。
-- 请求解析与响应在同一线程完成，避免异步回调在 NativeAOT 下丢失。
-- `startNotifications` 单独建立一条长连接读取通知；其余命令使用短连接。
+- Fleck 负责监听与每连接 IO；上游 Session 以 async/await 处理请求。
+- OHOS 侧 `OhosBleClient` 全异步：命令走短 TCP 连接，订阅走常驻连接 +
+  后台读循环；会话内用信号量串行化对桥的访问。
 
 ## BLE 命令桥
 
 ArkTS 侧 `BleTcpBridge.ets` 监听 `127.0.0.1:20113`，C# 侧
-`OhosBleBridge.cs` 是客户端。命令为逐行 JSON：
+`scratch-link-ohos/BLE/OhosBleClient.cs` 是客户端。命令为逐行 JSON：
 
 | op | 作用 |
 | --- | --- |
@@ -94,10 +96,16 @@ Scratch Link 的会话状态。
 
 ## TypeScript 实现
 
-`packages/scratch-link/src` 保留 TypeScript 协议实现，用于测试和主机调试；
-HarmonyOS HAP 只使用 C# 库。
+`packages/scratch-link/src` 保留 Node 版协议服务器，用于一致性测试
+（`tests/conformance.test.js`）和主机调试；HarmonyOS HAP 只使用 C# 库。
 
 ## 边界
 
-当前 `/scratch/bt` 与 `/scratch/ble` 共用同一处理逻辑，BT Classic 传输尚未接入；
-EV3 等依赖 BT Classic 的扩展仍需要单独的 ArkTS 适配。
+- BT Classic（`/scratch/bt`）尚未接入：连接会落到上游基础 Session，
+  任何方法都返回"method not found"；EV3 等依赖 BT Classic 的扩展需要
+  单独的 ArkTS 适配后再开放。
+- 上游 `ScratchLinkApp` 硬编码监听 `0.0.0.0:20111`；如需限定回环地址或
+  可配置端口，需要对上游提 patch。
+- NativeAOT 依赖反射根（`rd.xml`，DI 构造与 System.Text.Json 反射路径），
+  当前 `Dynamic="Required All"` 保正确性，库体积 ~36MB，待真机验证后
+  可换精确清单收窄。
