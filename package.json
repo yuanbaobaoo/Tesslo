@@ -21,6 +21,7 @@
     "build:link:csharp": "node scripts/build-link-csharp.mjs",
     "build:hap": "node scripts/build-hap.mjs",
     "dev:ohos": "node scripts/dev-ohos.mjs",
+    "fetch:media": "node scripts/fetch-media-library.mjs",
     "test": "pnpm test:link",
     "test:link": "node --test packages/scratch-link/test/*.test.js tests/*.test.js"
   },

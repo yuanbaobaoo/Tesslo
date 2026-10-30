@@ -6,6 +6,17 @@
 
 `media/manifest.json` 记录来源、文件数与总字节数；素材本身不提交到 git。
 
+## 获取
+
+```sh
+pnpm fetch:media
+```
+
+从 Scratch 公开 CDN（`cdn.assets.scratch.mit.edu`）拉取素材库 JSON 引用的
+1328 个资产，写入 `media/fetched/`。资产按内容寻址，脚本会用文件名的 MD5
+校验下载结果；已存在且校验通过的文件直接跳过。CI 使用同一脚本，并以素材库
+JSON 与脚本内容的哈希作为 GitHub Actions 缓存键。
+
 ## 目录
 
 ```text
@@ -15,7 +26,7 @@ media/
 ```
 
 `pnpm build:hap` 把 `media/fetched` 复制到 HAP 应用负载的 `static/fetched`，
-`ElectronStorageHelper` 在运行时从该目录加载素材。
+设备端 `AssetServer` 在运行时从该目录加载素材。
 
 ## 许可
 

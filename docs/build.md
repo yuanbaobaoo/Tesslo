@@ -18,6 +18,7 @@ PATH 上的 `hvigorw`。Java 从 `JAVA_HOME` 或 sdkman 的 JDK 21 解析。
 
 ```sh
 pnpm install                  # workspace 依赖
+pnpm fetch:media              # 从 Scratch 公开 CDN 准备 media/fetched
 pnpm build                    # build:editor + build:web
 pnpm build:link:csharp        # C# Link + NAPI + 运行库部署
 pnpm build:hap                # 未签名 HAP
@@ -104,4 +105,5 @@ pnpm build:link:csharp
 pnpm build:hap
 ```
 
-构建过程不访问上游 GitHub 仓库。唯一需要预先准备的是 `media/fetched` 素材。
+构建过程不访问上游 GitHub 仓库。唯一需要预先准备的是 `media/fetched` 素材：
+联网环境执行一次 `pnpm fetch:media`，之后即可离线构建。
