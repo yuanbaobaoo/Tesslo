@@ -4,6 +4,31 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
 export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+// 加载仓库根目录的 .env（可选）。已存在的环境变量优先，不会被 .env 覆盖。
+// 支持的变量见 .env.example：
+//   OHOS_COMMAND_LINE_TOOLS_ROOT / OHOS_SDK_ROOT / DOTNET_ROOT / JAVA_HOME
+const loadDotEnv = () => {
+    const envPath = path.join(repoRoot, '.env');
+    if (!fs.existsSync(envPath)) return;
+    for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eq = trimmed.indexOf('=');
+        if (eq <= 0) continue;
+        const key = trimmed.slice(0, eq).trim();
+        let value = trimmed.slice(eq + 1).trim();
+        if (
+            (value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))
+        ) {
+            value = value.slice(1, -1);
+        }
+        if (!(key in process.env)) process.env[key] = value;
+    }
+};
+loadDotEnv();
+
 export const appRoot = path.join(repoRoot, 'apps/tesslo');
 export const hapRoot = appRoot;
 export const webRoot = path.join(appRoot, 'web');

@@ -16,6 +16,7 @@ packages/*/dist.js
 *.app
 signing.*.local.json
 .idea
+.env
 media/fetched/
 media/cache/
 
