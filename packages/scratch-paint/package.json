@@ -6,7 +6,7 @@
   "browser": "./src/index.js",
   "scripts": {
     "build": "npm run clean && webpack --progress --colors --bail",
-    "clean": "rimraf ./dist && mkdirp dist && rimraf ./playground && mkdirp playground",
+    "clean": "rimraf ./dist && mkdirp dist",
     "i18n:push": "tx-push-src scratch-editor paint-editor ./translations/en.json",
     "i18n:src": "rimraf ./translations/messages && babel src > tmp.js && rimraf tmp.js && ./scripts/build-i18n-source.js ./translations/messages/ ./translations/",
     "lint": "eslint",

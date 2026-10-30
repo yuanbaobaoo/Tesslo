@@ -68,38 +68,7 @@ const webConfig = new ScratchWebpackConfigBuilder(common)
     })
     .get();
 
-/**
- * @type {import('webpack').Configuration}
- */
-const playgroundConfig = new ScratchWebpackConfigBuilder(common)
-    .setTarget('browserslist')
-    .merge({
-        devServer: {
-            contentBase: false,
-            port: process.env.PORT || 8576
-        },
-        output: {
-            path: path.resolve(__dirname, 'playground'),
-            library: {
-                name: 'ScratchSVGRenderer',
-                type: 'umd'
-            },
-            publicPath: '/'
-        }
-    })
-    .addPlugin(
-        new CopyWebpackPlugin({
-            patterns: [
-                {
-                    from: 'src/playground'
-                }
-            ]
-        })
-    )
-    .get();
-
 module.exports = [
     nodeConfig,
-    webConfig,
-    playgroundConfig
+    webConfig
 ];

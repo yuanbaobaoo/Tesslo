@@ -30,32 +30,6 @@ const webConfig = baseConfig.clone()
         }
     });
 
-const playgroundConfig = baseConfig
-    .clone()
-    .setTarget('browserslist')
-    .merge({
-        entry: {
-            playground: path.join(__dirname, 'src/playground/playground.js'),
-            queryPlayground: path.join(
-                __dirname,
-                'src/playground/queryPlayground.js'
-            )
-        },
-        output: {
-            path: path.resolve('playground')
-        }
-    })
-    .addPlugin(
-        new CopyWebpackPlugin({
-            patterns: [
-                {
-                    context: 'src/playground',
-                    from: '*.+(html|css)'
-                }
-            ]
-        })
-    );
-
 const nodeConfig = baseConfig.clone()
     .setTarget('node')
     .merge({
@@ -79,9 +53,6 @@ const nodeConfig = baseConfig.clone()
     });
 
 module.exports = [
-    // Playground
-    playgroundConfig.get(),
-
     // Web-compatible
     webConfig.get(),
 

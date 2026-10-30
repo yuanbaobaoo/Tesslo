@@ -28,7 +28,7 @@
   ],
   "scripts": {
     "build": "npm run docs && webpack --progress",
-    "clean": "rimraf dist playground",
+    "clean": "rimraf dist",
     "coverage": "tap ./test/{unit,integration}/*.js --coverage --coverage-report=lcov",
     "docs": "typedoc",
     "i18n:push": "tx-push-src scratch-editor extensions translations/core/en.json",

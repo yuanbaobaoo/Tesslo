@@ -88,27 +88,6 @@ const base = {
 };
 
 module.exports = [
-    // For the playground
-    defaultsDeep({}, base, {
-        devServer: {
-            contentBase: path.resolve(__dirname, 'playground'),
-            host: '0.0.0.0',
-            port: process.env.PORT || 8078
-        },
-        entry: {
-            playground: './src/playground/playground.jsx'
-        },
-        output: {
-            path: path.resolve(__dirname, 'playground'),
-            filename: '[name].js'
-        },
-        plugins: base.plugins.concat([
-            new HtmlWebpackPlugin({
-                template: 'src/playground/index.ejs',
-                title: 'Scratch 3.0 Paint Editor Playground'
-            })
-        ])
-    }),
     // For use as a library
     defaultsDeep({}, base, {
         externals: {
