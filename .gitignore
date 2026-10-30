@@ -15,7 +15,7 @@ packages/*/dist.js
 *.hap
 *.app
 signing.*.local.json
-
+.idea
 media/fetched/
 media/cache/
 
