@@ -20,7 +20,8 @@ build/verify/<serial>-tesslo-main.log
 build/verify/<serial>-tesslo.jpeg
 ```
 
-首次启动需要在设备上允许蓝牙、相机、麦克风、文件等权限。
+首次启动需要允许相机、麦克风、文件等权限；蓝牙权限不在启动时申请，
+首次在编辑器中扫描或连接蓝牙设备（micro:bit / WeDo）时才会弹出。
 
 ## 编辑器界面
 

@@ -4,10 +4,13 @@ import ble from '@ohos.bluetooth.ble';
 import access from '@ohos.bluetooth.access';
 import constant from '@ohos.bluetooth.constant';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { abilityAccessCtrl, Permissions, common } from '@kit.AbilityKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 const TAG: string = 'TessloBleBridge';
 const DOMAIN: number = 0x0000;
 const SCAN_MS: number = 4000;
+const BLUETOOTH_PERMISSIONS: Array<Permissions> = ['ohos.permission.ACCESS_BLUETOOTH'];
 
 const MICROBIT_SERVICE: string = '0000f005-0000-1000-8000-00805f9b34fb';
 const MICROBIT_RX: string = '5261da01-fa7e-42ab-850b-7c80220097cc';
@@ -87,6 +90,7 @@ interface SimContext {
 
 const sessions: Map<string, GattSession> = new Map();
 let scanCallback: ((results: Array<ble.ScanResult>) => void) | null = null;
+let blePermissionGranted: boolean = false;
 
 function log(level: string, message: string): void {
   if (level === 'error') {
@@ -95,6 +99,25 @@ function log(level: string, message: string): void {
     hilog.warn(DOMAIN, TAG, '%{public}s', message);
   } else {
     hilog.info(DOMAIN, TAG, '%{public}s', message);
+  }
+}
+
+// 仅在真正需要蓝牙（scan/connect）时才向用户申请权限；授权后缓存，避免重复弹窗
+async function ensureBlePermission(context: common.UIAbilityContext): Promise<boolean> {
+  if (blePermissionGranted) return true;
+  try {
+    const result = await abilityAccessCtrl.createAtManager()
+      .requestPermissionsFromUser(context, BLUETOOTH_PERMISSIONS);
+    const granted = result.authResults.every(status => status === 0);
+    if (granted) {
+      blePermissionGranted = true;
+    } else {
+      log('warn', 'bluetooth permission denied by user');
+    }
+    return granted;
+  } catch (error) {
+    log('warn', `bluetooth permission request failed: ${(error as BusinessError).message ?? error}`);
+    return false;
   }
 }
 
@@ -148,7 +171,8 @@ async function loadServices(session: GattSession): Promise<Array<BridgeService>>
   return output;
 }
 
-async function handleCommand(client: socket.TCPSocketConnection, command: BridgeCommand): Promise<void> {
+async function handleCommand(client: socket.TCPSocketConnection, command: BridgeCommand,
+  context: common.UIAbilityContext): Promise<void> {
   try {
     if (command.op === 'connect') {
       const deviceId: string = command.deviceId ?? '';
@@ -158,6 +182,11 @@ async function handleCommand(client: socket.TCPSocketConnection, command: Bridge
       }
       if (sessions.has(deviceId)) {
         send(client, {event: 'connect', id: command.id, ok: true});
+        return;
+      }
+      const permitted: boolean = await ensureBlePermission(context);
+      if (!permitted) {
+        send(client, {event: 'error', id: command.id, error: 'bluetooth permission denied'});
         return;
       }
       const device: ble.GattClientDevice = ble.createGattClientDevice(deviceId);
@@ -377,7 +406,7 @@ function handleSimulatedCommand(client: socket.TCPSocketConnection, command: Bri
 }
 
 async function handleConnection(client: socket.TCPSocketConnection, simulate: boolean,
-  simContext: SimContext): Promise<void> {
+  simContext: SimContext, context: common.UIAbilityContext): Promise<void> {
   const decoder: util.TextDecoder = util.TextDecoder.create('utf-8');
   let pending: string = '';
   let scanTimer: number = -1;
@@ -402,6 +431,45 @@ async function handleConnection(client: socket.TCPSocketConnection, simulate: bo
       }
     }
     send(client, {event: 'scanEnd'});
+  };
+
+  // 首次真实扫描前申请蓝牙权限；授权前不触碰任何蓝牙接口
+  const startScan = async (): Promise<void> => {
+    try {
+      const permitted: boolean = await ensureBlePermission(context);
+      if (!permitted) {
+        scanning = false;
+        send(client, {event: 'error', error: 'bluetooth permission denied'});
+        return;
+      }
+      if (access.getState() !== access.BluetoothState.STATE_ON) {
+        scanning = false;
+        send(client, {event: 'error', error: 'Bluetooth is off'});
+        return;
+      }
+      scanCallback = (results: Array<ble.ScanResult>): void => {
+        for (const result of results) {
+          send(client, {
+            event: 'scan',
+            deviceId: result.deviceId,
+            name: result.deviceName ?? '',
+            rssi: result.rssi,
+            services: result.serviceUuids ?? []
+          });
+        }
+      };
+      ble.on('BLEDeviceFind', scanCallback);
+      const filter: ble.ScanFilter = {};
+      ble.startBLEScan([filter], {
+        interval: 500,
+        dutyMode: ble.ScanDuty.SCAN_MODE_LOW_POWER,
+        matchMode: ble.MatchMode.MATCH_MODE_AGGRESSIVE
+      });
+      scanTimer = setTimeout(stopScan, SCAN_MS);
+    } catch (error) {
+      scanning = false;
+      send(client, {event: 'error', error: `scan failed: ${error.message}`});
+    }
   };
 
   client.on('message', (info: socket.SocketMessageInfo) => {
@@ -448,42 +516,15 @@ async function handleConnection(client: socket.TCPSocketConnection, simulate: bo
       }
       if (command.op === 'scan') {
         if (scanning) continue;
-        try {
-          if (access.getState() !== access.BluetoothState.STATE_ON) {
-            send(client, {event: 'error', error: 'Bluetooth is off'});
-            continue;
-          }
-          scanning = true;
-          scanCallback = (results: Array<ble.ScanResult>): void => {
-            for (const result of results) {
-              send(client, {
-                event: 'scan',
-                deviceId: result.deviceId,
-                name: result.deviceName ?? '',
-                rssi: result.rssi,
-                services: result.serviceUuids ?? []
-              });
-            }
-          };
-          ble.on('BLEDeviceFind', scanCallback);
-          const filter: ble.ScanFilter = {};
-          ble.startBLEScan([filter], {
-            interval: 500,
-            dutyMode: ble.ScanDuty.SCAN_MODE_LOW_POWER,
-            matchMode: ble.MatchMode.MATCH_MODE_AGGRESSIVE
-          });
-          scanTimer = setTimeout(stopScan, SCAN_MS);
-        } catch (error) {
-          scanning = false;
-          send(client, {event: 'error', error: `scan failed: ${error.message}`});
-        }
+        scanning = true;
+        startScan();
         continue;
       }
       if (command.op === 'stopScan') {
         stopScan();
         continue;
       }
-      handleCommand(client, command);
+      handleCommand(client, command, context);
     }
   });
 
@@ -492,13 +533,14 @@ async function handleConnection(client: socket.TCPSocketConnection, simulate: bo
   });
 }
 
-export async function startTessloBleBridge(port: number = 20113, simulate: boolean = false): Promise<void> {
+export async function startTessloBleBridge(port: number = 20113, simulate: boolean = false,
+  context: common.UIAbilityContext): Promise<void> {
   const server = socket.constructTCPSocketServerInstance();
   const simContext: SimContext = {connected: null, subscriptions: new Map()};
   await server.listen({address: '127.0.0.1', port: port, family: 1});
   log('info', `listening on 127.0.0.1:${port} (simulate=${simulate})`);
   server.on('connect', (client: socket.TCPSocketConnection) => {
-    handleConnection(client, simulate, simContext).catch((error: Error) => {
+    handleConnection(client, simulate, simContext, context).catch((error: Error) => {
       log('error', `connection failed: ${error.message}`);
     });
   });

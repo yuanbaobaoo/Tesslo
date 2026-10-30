@@ -1,4 +1,4 @@
-import { AbilityConstant, Permissions, UIAbility, Want, abilityAccessCtrl } from '@kit.AbilityKit';
+import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { window } from '@kit.ArkUI';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { BusinessError } from '@kit.BasicServicesKit';
@@ -8,19 +8,13 @@ import { log } from '../common/AppLog';
 import { startTessloBleBridge } from '../ble/BleTcpBridge';
 import { startAssetServer } from '../assets/AssetServer';
 
-const BLUETOOTH_PERMISSIONS: Array<Permissions> = ['ohos.permission.ACCESS_BLUETOOTH'];
-
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     log('boot arkweb');
     const wantSim = want.parameters?.['tessloBleSim'];
     const simulate = deviceInfo.productModel === 'emulator' || wantSim === 'true' || wantSim === true;
-    if (!simulate) {
-      abilityAccessCtrl.createAtManager()
-        .requestPermissionsFromUser(this.context, BLUETOOTH_PERMISSIONS)
-        .catch((error: BusinessError) => log(`bluetooth permission failed: ${error.message}`));
-    }
-    startTessloBleBridge(20113, simulate)
+    // 蓝牙权限不在此处申请：由 BLE 桥在真正收到 scan/connect 请求时再向用户申请
+    startTessloBleBridge(20113, simulate, this.context)
       .then(() => log(`BLE bridge listening simulate=${simulate}`))
       .catch((error: BusinessError) => log(`BLE bridge failed: ${error.message}`));
     startAssetServer(this.context, 20114)
