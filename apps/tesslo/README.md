@@ -24,5 +24,6 @@ pnpm build:hap
 pnpm dev:ohos -- --device <serial>
 ```
 
-`web` 构建到 `web/dist`，HAP 构建再把它和 `media/fetched` 一起放进
-`entry/src/main/resources/rawfile`，由 ArkWeb 以 `$rawfile('index.html')` 加载。
+`web` 构建到 `web/dist`，HAP 构建再把它和 `assets/fetched` 一起放进
+`entry/src/main/resources/rawfile`（素材用硬链接，不产生第二份数据），
+由 ArkWeb 以 `$rawfile('index.html')` 加载。

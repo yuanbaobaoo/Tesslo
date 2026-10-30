@@ -133,12 +133,12 @@ jobs:
           fi
           test -f "$TARGET/sdk/System.Private.CoreLib.dll"
 
-      # media/fetched 的 1328 个素材已随仓库提交，构建直接使用，不访问 CDN。
+      # apps/tesslo/assets/fetched 的 1328 个素材已随仓库提交，构建直接使用，不访问 CDN。
       - name: Verify offline media
         run: |
-          count="$(find media/fetched -type f | wc -l)"
-          bytes="$(find media/fetched -type f -printf '%s\n' | awk '{s+=$1} END{print s}')"
-          echo "media/fetched: $count files, $bytes bytes"
+          count="$(find apps/tesslo/assets/fetched -type f | wc -l)"
+          bytes="$(find apps/tesslo/assets/fetched -type f -printf '%s\n' | awk '{s+=$1} END{print s}')"
+          echo "offline media: $count files, $bytes bytes"
           test "$count" -eq 1328
           test "$bytes" -eq 56819338
 

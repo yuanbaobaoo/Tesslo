@@ -30,18 +30,18 @@ micro:bit、LEGO WeDo 2.0 等蓝牙外设。
 ```text
 packages/          Scratch 编辑器源码（scratch-gui / vm / blocks / render ...）
 apps/tesslo
+  assets/fetched/  离线素材库（已入库，构建时硬链接进 rawfile）
   web/             编辑器 Web 入口与打包
   entry/           HAP entry 模块（ArkTS：ArkWeb 页面、BLE 桥、素材服务）
   AppScope/        HAP 应用配置
 packages/scratch-link   Scratch Link（上游 common + OHOS 平台实现，NativeAOT + NAPI）
 docs/              技术文档与图片资源
-media/fetched/     离线素材库（不入库，构建前准备）
 ```
 
 ## 快速开始
 
 前置条件：Node.js ≥ 20 与 pnpm 11、HarmonyOS Command Line Tools 26、
-JDK 21、.NET SDK 9.0.104、`media/fetched/` 离线素材。
+JDK 21、.NET SDK 9.0.104；离线素材已随仓库提交，无需额外准备。
 
 ```sh
 pnpm install               # workspace 依赖

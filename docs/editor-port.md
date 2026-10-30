@@ -60,9 +60,10 @@ pnpm build:web
 
 Scratch 默认素材库（角色、造型、背景、声音）在构建时从本地缓存注入：
 
-- `media/fetched/` 保存已下载素材，`media/manifest.json` 记录来源与数量。
-- 素材不进入 git；离线构建前需要先准备好该目录。
-- `pnpm build:hap` 把它复制到 `rawfile/static/fetched`。
+- `apps/tesslo/assets/fetched/` 保存素材并随仓库提交，
+  `apps/tesslo/assets/manifest.json` 记录来源与数量。
+- 构建不需要联网，也不需要额外准备。
+- `pnpm build:hap` 把它硬链接到 `rawfile/static/fetched`（不支持硬链接时回退复制）。
 - ArkTS `AssetServer` 在 `127.0.0.1:20114` 提供这些文件；`WebStorageHelper` 通过
   HTTP 读取，不依赖 `resource://` 的 fetch。
 

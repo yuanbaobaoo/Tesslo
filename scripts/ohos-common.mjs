@@ -34,7 +34,7 @@ export const hapRoot = appRoot;
 export const webRoot = path.join(appRoot, 'web');
 export const webDist = path.join(webRoot, 'dist');
 export const rawfileRoot = path.join(appRoot, 'entry/src/main/resources/rawfile');
-export const mediaFetched = path.join(repoRoot, 'media/fetched');
+export const mediaFetched = path.join(appRoot, 'assets/fetched');
 export const bundleName = 'io.github.yuanbaobaoo.tesslo';
 export const abilityName = 'EntryAbility';
 
@@ -126,6 +126,30 @@ function copyDir(source, target) {
     fs.cpSync(source, target, {recursive: true});
 }
 
+function linkOrCopy(source, target) {
+    fs.mkdirSync(path.dirname(target), {recursive: true});
+    try {
+        fs.linkSync(source, target);
+    } catch (error) {
+        // 跨文件系统、Windows 权限或文件系统不支持硬链接时回退为真实复制。
+        fs.copyFileSync(source, target);
+    }
+}
+
+// 把离线素材以硬链接方式铺进 rawfile：不产生第二份数据。
+// rawfile 在 hvigor 打包期间只读；不要在 rawfile 内原地修改素材，
+// 否则硬链接会同时改到 apps/tesslo/assets/fetched 的源文件。
+function linkDir(source, target) {
+    fs.mkdirSync(target, {recursive: true});
+    for (const entry of fs.readdirSync(source, {withFileTypes: true})) {
+        const from = path.join(source, entry.name);
+        const to = path.join(target, entry.name);
+        if (entry.isDirectory()) linkDir(from, to);
+        else if (entry.isFile()) linkOrCopy(from, to);
+        else fs.cpSync(from, to, {recursive: true});
+    }
+}
+
 function removeMaps(dir) {
     if (!fs.existsSync(dir)) return;
     for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
@@ -150,9 +174,9 @@ export function stageWebPayload() {
     copyDir(webDist, rawfileRoot);
     fs.mkdirSync(path.join(rawfileRoot, 'static'), {recursive: true});
     if (fs.existsSync(mediaFetched)) {
-        fs.cpSync(mediaFetched, path.join(rawfileRoot, 'static/fetched'), {recursive: true});
+        linkDir(mediaFetched, path.join(rawfileRoot, 'static/fetched'));
     } else {
-        console.warn('[ohos] media/fetched is missing; the offline library will be empty');
+        console.warn('[ohos] apps/tesslo/assets/fetched is missing; the offline library will be empty');
     }
     removeMaps(rawfileRoot);
 }

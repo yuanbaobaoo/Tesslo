@@ -8,7 +8,7 @@
 | HarmonyOS Command Line Tools 26 | hvigor、hdc、Native SDK |
 | JDK 21 | hvigor 与 devecocli 签名 |
 | .NET SDK 9.0.104 | C# Link 与 NativeAOT |
-| `media/fetched/` | 离线素材库（已入库，无需联网） |
+| `apps/tesslo/assets/fetched/` | 离线素材库（已入库，无需联网） |
 
 `scripts/ohos-common.mjs` 自动探测命令行工具：`OHOS_COMMAND_LINE_TOOLS_ROOT`、
 `~/command-line-tools`、`/Users/Shared/local/ohos/command-line-tools*`，最后是
@@ -48,7 +48,8 @@ NativeAOT 库，用 OHOS clang 编译 NAPI 桥，然后把产物复制到 HAP �
 1. 确认 `web/dist/index.html`；缺失时先运行 `pnpm build`。
 2. 确认 `libtesslolink.so` 和 `TessloLinkNative.so`。
 3. 复制 `web/dist` 到 `entry/src/main/resources/rawfile`。
-4. 复制 `media/fetched` 到 `rawfile/static/fetched`。
+4. 把 `apps/tesslo/assets/fetched` 以硬链接铺到 `rawfile/static/fetched`
+   （不支持硬链接的文件系统回退为复制）。
 5. 运行 hvigor `assembleHap`。
 
 输出：
@@ -104,5 +105,5 @@ pnpm build:link:csharp
 pnpm build:hap
 ```
 
-构建过程不访问任何素材 CDN 或上游 GitHub 仓库；`media/fetched` 的 1328 个
-素材已随仓库提交，checkout 后即可离线构建。
+构建过程不访问任何素材 CDN 或上游 GitHub 仓库；`apps/tesslo/assets/fetched`
+的 1328 个素材已随仓库提交，checkout 后即可离线构建。

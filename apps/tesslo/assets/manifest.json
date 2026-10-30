@@ -3,5 +3,5 @@
   "committed": true,
   "files": 1328,
   "bytes": 56819338,
-  "note": "Assets are committed under media/fetched and copied into the HAP at build time; no network fetch."
+  "note": "Assets are committed under apps/tesslo/assets/fetched and hardlinked into rawfile at build time; no network fetch."
 }

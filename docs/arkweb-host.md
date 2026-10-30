@@ -17,8 +17,9 @@ Web({src: $rawfile('index.html'), controller: this.controller})
 ```
 
 `index.html`、`main.js`、GUI 静态资源、离线素材都在
-`entry/src/main/resources/rawfile`。HAP 构建时由 `scripts/ohos-common.mjs` 写入，
-源文件不进入 git。
+`entry/src/main/resources/rawfile`。其中 Web bundle 由 `scripts/ohos-common.mjs`
+在 HAP 构建时写入，`rawfile` 本身不进入 git；离线素材的源文件在
+`apps/tesslo/assets/fetched`（已入库），构建时以硬链接铺进 rawfile。
 
 页面加载完成后执行 WebGL 探测并把结果写入 `tesslo-main.log`，便于真机验证。
 
