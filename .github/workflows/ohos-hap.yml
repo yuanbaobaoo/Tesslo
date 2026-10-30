@@ -1,12 +1,17 @@
 # HarmonyOS HAP 自动构建与发版
 #
-# 两条触发路径：workflow_dispatch（手动，产物进 Artifact 验证流程）；push tag v*（构建 + 未签名 HAP 发该 tag Release）。
+# 触发路径：
+#   - push master：构建未签名 HAP，产物进 Artifact（不发 Release）；
+#   - push tag v*：构建 + 未签名 HAP 发该 tag Release；
+#   - workflow_dispatch：手动构建，产物进 Artifact。
 # 工具链与依赖细节（CLT 分卷托管、ohos-net runtime pack、离线素材包）见本文件内注释。
 
 name: OHOS HAP
 
 on:
   push:
+    branches:
+      - master
     tags:
       - "v*"
   workflow_dispatch:
@@ -49,11 +54,11 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      # command-line-tools 自带 jbr；此步为保险（hvigor 找不到自带 jre 时兜底）。
+      # 与本仓 docs/build.md、.env.example 保持一致：hvigor/devecocli 使用 JDK 21。
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       # build:link:csharp 交叉编译 C# 桥需要 .NET 9（版本与本仓 ohos-net.lock.json 一致）。
       - uses: actions/setup-dotnet@v4
@@ -85,6 +90,18 @@ jobs:
           # build:link:csharp 以 OHOS_SDK_ROOT 定位 Native SDK（锚点 native/oh-uni-package.json）
           echo "OHOS_SDK_ROOT=$CLT_ROOT/sdk/default" >> "$GITHUB_ENV"
           echo "command-line-tools: $CLT_ROOT"
+
+      # 尽早暴露工具链布局问题，避免跑到 hvigor 阶段才报错。
+      - name: Verify OHOS toolchain
+        run: |
+          set -e
+          test -x "$OHOS_COMMAND_LINE_TOOLS_ROOT/bin/hvigorw"
+          test -x "$OHOS_COMMAND_LINE_TOOLS_ROOT/bin/ohpm"
+          test -d "$OHOS_SDK_ROOT/openharmony/native"
+          "$OHOS_COMMAND_LINE_TOOLS_ROOT/bin/ohpm" -v
+          cd "$RUNNER_TEMP"
+          DEVECO_SDK_HOME="$OHOS_COMMAND_LINE_TOOLS_ROOT/sdk" \
+            "$OHOS_COMMAND_LINE_TOOLS_ROOT/bin/hvigorw" --version
 
       - name: Fetch ohos-net runtime pack
         run: |
@@ -130,8 +147,14 @@ jobs:
 
       - name: Build C# link bridge
         run: |
-          # build:link:csharp 以 DOTNET_ROOT 定位 dotnet（setup-dotnet 装在 toolcache）。
-          echo "DOTNET_ROOT=$(dirname "$(dirname "$(command -v dotnet)")")" >> "$GITHUB_ENV"
+          # setup-dotnet 已经导出正确的 DOTNET_ROOT；只有缺失时才按 dotnet 可执行文件位置推导。
+          # 注意：dirname 只能取一层（$DOTNET_ROOT/dotnet 与可执行文件同目录），取两层会少一级。
+          if [ -z "${DOTNET_ROOT:-}" ] || [ ! -x "$DOTNET_ROOT/dotnet" ]; then
+            DOTNET_ROOT="$(dirname "$(command -v dotnet)")"
+            echo "DOTNET_ROOT=$DOTNET_ROOT" >> "$GITHUB_ENV"
+          fi
+          test -x "$DOTNET_ROOT/dotnet" || { echo "::error::dotnet not found under DOTNET_ROOT=$DOTNET_ROOT"; exit 1; }
+          dotnet --version
           pnpm build:link:csharp
           ls -la apps/tesslo/entry/libs/arm64-v8a/
 
@@ -160,6 +183,7 @@ jobs:
             dist/Tesslo-*-ohos-arm64-unsigned.hap
             dist/sha256.txt
           retention-days: 14
+          if-no-files-found: error
 
       # 版本无关的 latest 别名资产：让 README 的
       # releases/latest/download/Tesslo-latest-ohos-arm64-unsigned.hap 直链始终可下载。
