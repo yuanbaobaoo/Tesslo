@@ -19,9 +19,10 @@
 
 ## 1. 缩进与格式（强制）
 
-- `.ets` / `.ts` / `.js` / `.jsx` / `.json5` / `.css` / `.cs` / `.cpp`
-  统一 **4 个空格**，禁止 Tab。
-- 编辑器 `editor.tabSize = 4`；Prettier / ESLint 的 `tabWidth` 也为 4。
+- `.ets` / `.ts` / `.js` / `.jsx` / `.mjs` 统一 **2 个空格**，禁止 Tab；
+  `.json5` / `.css` / `.cs` / `.cpp` 统一 **4 个空格**，禁止 Tab。
+- 编辑器 `editor.tabSize`：JS/TS/ETS 为 2，CSS/C#/C++ 为 4；
+  Prettier / ESLint 的 `tabWidth` 按文件类型对应设置。
 - 单引号、语句结尾分号；多行对象/数组的尾随逗号按文件现有风格，不混用。
 - 不新增横向超过一屏的长行；长表达式按第 8 节换行。
 - 不制造格式化噪声：修改 vendored 文件时只改目标行。
@@ -133,30 +134,30 @@
 
 ## 8. 组件与长链格式
 
-ArkTS 链式调用/多参数组件：超过一屏宽时，一次调用/一个参数一行，缩进 4 空格，
+ArkTS 链式调用/多参数组件：超过一屏宽时，一次调用/一个参数一行，缩进 2 空格，
 闭合对齐；短链可单行。
 
 ```ts
 Text(item.name)
-    .fontSize(14)
-    .fontColor(Color.Gray)
-    .maxLines(1)
+  .fontSize(14)
+  .fontColor(Color.Gray)
+  .maxLines(1)
 ```
 
 ```ts
 ComponentName({
-    title: item.title,
-    onClick: () => this.handleClick(item)
+  title: item.title,
+  onClick: () => this.handleClick(item)
 })
-    .width('100%')
+  .width('100%')
 ```
 
 JSX 同理：
 
 ```jsx
 <Component
-    title={item.title}
-    onClick={() => handleClick(item)}
+  title={item.title}
+  onClick={() => handleClick(item)}
 />
 ```
 

@@ -7,7 +7,6 @@ namespace ScratchLink.Ohos.BLE;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Fleck;
@@ -19,10 +18,13 @@ internal class OhosBleSession : BLESession<OhosBlePeripheral, string, string>
     /// <summary>与上游 Windows 版一致的扫描窗口长度。</summary>
     private static readonly TimeSpan ScanWindow = TimeSpan.FromMilliseconds(4500);
 
+    // 与设备内桥通信的客户端；bridgeLock 串行化全部桥访问（含 Endpoint 侧共享）
     private readonly OhosBleClient bridge = new ();
     private readonly SemaphoreSlim bridgeLock = new (1, 1);
+    // 连接状态三件套：DoConnect 成功后写入，Dispose 时清理
     private volatile bool connected;
     private string? connectedDeviceId;
+    // 已连接设备的 GATT 表（小写 UUID -> 特征集合），DoGetEndpoint 的白名单依据
     private Dictionary<string, HashSet<string>> connectedServices =
         new (StringComparer.Ordinal);
 
@@ -40,32 +42,16 @@ internal class OhosBleSession : BLESession<OhosBlePeripheral, string, string>
         await this.bridgeLock.WaitAsync();
         try
         {
-            await this.bridge.ScanAsync(ScanWindow, scanEvent =>
+            await this.bridge.ScanAsync(ScanWindow, scan =>
             {
-                if (!scanEvent.TryGetProperty("deviceId", out var deviceIdElement) ||
-                    deviceIdElement.GetString() is not { } deviceId)
-                {
-                    return Task.CompletedTask;
-                }
-
-                var name = scanEvent.TryGetProperty("name", out var nameElement) ? nameElement.GetString() ?? string.Empty : string.Empty;
-                var rssi = scanEvent.TryGetProperty("rssi", out var rssiElement) ? rssiElement.GetInt32() : 0;
-                var services = new List<string>();
-                if (scanEvent.TryGetProperty("services", out var servicesElement) &&
-                    servicesElement.ValueKind == JsonValueKind.Array)
-                {
-                    services.AddRange(servicesElement.EnumerateArray()
-                        .Select(service => (service.GetString() ?? string.Empty).ToLowerInvariant()));
-                }
-
                 // 桥不提供厂商广播数据：带 manufacturerData 的过滤器视为不匹配
-                if (!filters.Any(filter => filter.Matches(name, services, NoManufacturerData)))
+                if (!filters.Any(filter => filter.Matches(scan.Name, scan.Services, NoManufacturerData)))
                 {
                     return Task.CompletedTask;
                 }
 
-                var peripheral = new OhosBlePeripheral(deviceId, name, rssi, services);
-                return this.OnPeripheralDiscovered(peripheral, deviceId, name, rssi);
+                var peripheral = new OhosBlePeripheral(scan.DeviceId, scan.Name, scan.Rssi, scan.Services);
+                return this.OnPeripheralDiscovered(peripheral, scan.DeviceId, scan.Name, scan.Rssi);
             });
         }
         finally
@@ -95,10 +81,13 @@ internal class OhosBleSession : BLESession<OhosBlePeripheral, string, string>
     }
 
     /// <inheritdoc/>
-    protected override string GetDefaultServiceId() => null;
+    /// <remarks>OHOS 桥没有"默认 service/characteristic"概念：约定返回 null 使上游调用侧
+    /// 回退到客户端显式指定的值；基类签名未标注可空，此处以 ! 断言该既有契约。</remarks>
+    protected override string GetDefaultServiceId() => null!;
 
     /// <inheritdoc/>
-    protected override string GetDefaultCharacteristicId(string serviceId) => null;
+    /// <remarks>同 <see cref="GetDefaultServiceId"/>：null 表示无默认值。</remarks>
+    protected override string GetDefaultCharacteristicId(string serviceId) => null!;
 
     /// <inheritdoc/>
     protected override Task<IBLEEndpoint> DoGetEndpoint(string serviceId, string characteristicId)
@@ -144,5 +133,6 @@ internal class OhosBleSession : BLESession<OhosBlePeripheral, string, string>
         base.Dispose(disposing);
     }
 
+    // 桥不提供厂商广播数据：空的 manufacturerData 表让带该过滤器的规则必然不匹配
     private static readonly Dictionary<int, IEnumerable<byte>> NoManufacturerData = new ();
 }

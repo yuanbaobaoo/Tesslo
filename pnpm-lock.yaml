@@ -38,9 +38,15 @@ importers:
       copy-webpack-plugin:
         specifier: 6.4.1
         version: 6.4.1(bluebird@3.7.2)(webpack@5.106.2)
+      css-loader:
+        specifier: 5.2.7
+        version: 5.2.7(webpack@5.106.2)
       rimraf:
         specifier: 3.0.2
         version: 3.0.2
+      style-loader:
+        specifier: 4.0.0
+        version: 4.0.0(webpack@5.106.2)
       webpack:
         specifier: 5.106.2
         version: 5.106.2(esbuild@0.28.2)(uglify-js@3.19.3)(webpack-cli@5.1.4)

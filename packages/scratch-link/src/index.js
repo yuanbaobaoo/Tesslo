@@ -1,3 +1,4 @@
+// 包导出入口：server 工厂、BLE/BT 会话与模拟适配器、OHOS 桥适配器、JSON-RPC 工具
 export {createScratchLinkServer, startScratchLinkServer} from './server.js';
 export {BleSession} from './ble-session.js';
 export {BtSession, FakeBtAdapter} from './bt-session.js';

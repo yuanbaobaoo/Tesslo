@@ -20,6 +20,8 @@
     "@scratch/scratch-gui": "workspace:*",
     "babel-loader": "9.2.1",
     "copy-webpack-plugin": "6.4.1",
+    "css-loader": "5.2.7",
+    "style-loader": "4.0.0",
     "rimraf": "3.0.2",
     "webpack": "5.106.2",
     "webpack-cli": "5.1.4"

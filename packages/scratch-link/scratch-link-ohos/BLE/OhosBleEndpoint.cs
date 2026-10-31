@@ -10,6 +10,8 @@ using ScratchLink.BLE;
 
 internal sealed class OhosBleEndpoint : IBLEEndpoint
 {
+    // bridge/bridgeLock 由 Session 传入共享：Endpoint 的读写与扫描/连接互斥，
+    // 避免并发操作同一条短连接协议
     private readonly OhosBleClient bridge;
     private readonly SemaphoreSlim bridgeLock;
     private readonly string deviceId;

@@ -16,8 +16,8 @@ internal class OhosSessionManager : SessionManager
         {
             "/scratch/ble" => new OhosBleSession(webSocket),
 
-            // BT classic on OHOS is not wired up yet; a plain Session answers
-            // JSON-RPC with "method not found"-style errors for debugging.
+            // BT classic 在 OHOS 上尚未接通：未知路径落到基础 Session，
+            // 以"method not found"类错误应答，便于调试（与上游对未知路径的行为一致）。
             _ => new Session(webSocket),
         };
     }
