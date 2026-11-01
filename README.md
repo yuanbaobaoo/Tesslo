@@ -23,25 +23,27 @@ micro:bit、LEGO WeDo 2.0 等蓝牙外设。
 - **设备端 Scratch Link**：C# Scratch Link 以 NativeAOT 运行于 HAP 内，
   配合 ArkTS 蓝牙桥连接 micro:bit、WeDo 2.0 等外设；蓝牙权限仅在真正
   扫描/连接时向用户申请。
-- **完整可复现构建**：从编辑器源码到签名 HAP 全流程脚本化。
+- **环境自愈与可复现构建**：`pnpm install` 检测缺失工具链并按需下载
+  （哈希锁定），从编辑器源码到 HAP/App 全流程脚本化。
 
 ## 环境要求
 
 | 项目 | 版本 / 要求 | 用途 |
 | --- | --- | --- |
 | 目标系统 | HarmonyOS 7（API 26，`compatibleSdkVersion 26.0.0`） | HAP 运行环境 |
-| 构建主机 | macOS 14+（Apple Silicon 实测）或 Linux x64 | Windows 未验证 |
+| 构建主机 | macOS 14+（Apple Silicon）或 Linux x64 | Intel mac 与 Windows 不支持 |
 | Node.js | ≥ 20（CI 使用 22） | workspace 与构建脚本 |
 | pnpm | 11.21.0 | 包管理与脚本入口 |
-| HarmonyOS Command Line Tools | 26.0.0.851 | hvigor、hdc、Native SDK |
-| JDK | 21 | hvigor、devecocli 签名 |
-| .NET SDK | 9.0.104 | C# Scratch Link / NativeAOT |
-| ohos-net runtime pack | [Release `tools`](https://github.com/yuanbaobaoo/Tesslo/releases/tag/tools) | NativeAOT 目标运行库 |
-| 设备调试 | HarmonyOS 设备 + hdc | `pnpm dev:ohos` 安装与启动 |
+| JDK | 17+（手动安装，建议 [Temurin](https://adoptium.net/)） | hvigor 打包/签名（Java 实现） |
+| HarmonyOS CLT / .NET SDK / runtime pack / devecocli | 由 `pnpm install` 自动检测 | 本机已有则直接用 |
 
-不需要安装 DevEco Studio：构建脚本直接调用 command-line-tools。CI 从
-GitHub Release `tools` 下载 Linux 分卷；本地使用本机安装的 CLT 26。
-ohos-net runtime pack 由本地/CI 共用，也从 `tools` 下载并校验 SHA-256。
+除 Node、pnpm、JDK 外的构建依赖**无需手动安装**：`pnpm install` 会探测
+CLT（hvigor/hdc/Native SDK）、.NET SDK 9.0.104、ohos-net runtime pack 与
+devecocli，缺失时询问确认（y/N）后下载到仓库内 `.toolchain/`，版本与
+SHA-256 锁定在 `scripts/toolchain.lock.json`。在 `.env` 显式声明路径的组件
+只校验、绝不自动下载。体检表：`pnpm env:status`。不需要安装 DevEco Studio。
+
+## 仓库结构
 
 ## 仓库结构
 
@@ -64,25 +66,26 @@ docs/                          架构、移植、构建与真机验证文档
 
 - `apps/tesslo/entry/src/main/resources/rawfile/`：由 `pnpm build:hap` 生成，
   包含 Web bundle 和硬链接进来的离线素材；
+- `.toolchain/` 与 `.env.toolchain`：环境自愈下载的工具链与生成的路径配置；
 - `packages/scratch-link/ohos-net/runtime/`：NativeAOT runtime pack，从
   Release `tools` 下载；
-- `apps/tesslo/entry/libs/`、`*.hap`、`node_modules/`、`oh_modules/` 等。
+- `apps/tesslo/entry/libs/`、`*.hap`、`*.app`、`node_modules/`、`oh_modules/` 等。
 
 ## 快速开始
 
-前置条件见上方「环境要求」。离线素材已随仓库提交；本地构建需要先安装
-CLT 26 与 .NET SDK 9.0.104，并把 `tools` Release 里的 runtime pack 解压到
-`packages/scratch-link/ohos-net/runtime/`。
+前置条件见上方「环境要求」（Apple Silicon mac / Linux x64 + Node + JDK）。
 
 ```sh
-pnpm install               # workspace 依赖
-pnpm build                 # 构建编辑器与 Web 产物
-pnpm build:link:csharp     # C# Link + NAPI 运行库
-pnpm build:hap             # 组装 HAP（--signed 输出签名包）
+git clone https://github.com/yuanbaobaoo/Tesslo && cd Tesslo
+pnpm install               # 依赖 + 环境自愈：缺失工具链确认后自动下载
+pnpm build                 # 全链：编辑器 → Web → C# Link → 未签名 HAP + App
+pnpm build:signed          # 需要签名包时（华为账号调试签名，首次需登录）
 pnpm dev:ohos -- --device <serial>   # 安装到设备并启动
 ```
 
-修改 `packages/scratch-gui` 源码后需重新执行 `pnpm build:gui`，再
+单独构建与更多命令（`build:hap` / `build:app` / `env:status` /
+`env:install` 等）见 [构建与打包](docs/build.md)。修改
+`packages/scratch-gui` 源码后需重新执行 `pnpm build:gui`，再
 `pnpm build:web` 与 `pnpm build:hap`。
 
 ## 文档
