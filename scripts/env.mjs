@@ -448,8 +448,9 @@ function confirm(question, yesFlag, noFlag) {
   });
 }
 
-// Release 基址可被镜像覆盖（国内网络访问 GitHub Release 慢）
-const baseUrl = () => process.env.TESSLO_TOOLS_BASE_URL || lock.baseUrl;
+// 组件基址独立配置（CLT 走 GitCode 国内 CDN，runtime pack 走 GitHub Release）；
+// TESSLO_TOOLS_BASE_URL 可整体覆盖（自建镜像场景）
+const componentBaseUrl = entry => process.env.TESSLO_TOOLS_BASE_URL || entry.baseUrl;
 
 /**
  * 安装 CLT：分卷下载 → 逐卷校验 → cat 还原 → 整包校验 → 解压 → 锚点定位。
@@ -480,7 +481,7 @@ async function installClt(force) {
     for (let i = 0; i < entry.parts.length; i += 1) {
       const partPath = path.join(cacheDir, entry.parts[i]);
       console.log(`[env] 下载 ${entry.parts[i]}（${entry.sizeHint} 共 ${entry.parts.length} 卷）`);
-      download(`${baseUrl()}/${entry.parts[i]}`, partPath);
+      download(`${componentBaseUrl(lock.clt)}/${entry.parts[i]}`, partPath);
       // 逐卷先校验，损坏的分卷立即失败，避免 cat 之后整包报废
       if (entry.partSha256 && entry.partSha256[i]) {
         await verifySha256(partPath, entry.partSha256[i]);
@@ -561,7 +562,7 @@ async function installRuntimePack(force, localArchive) {
   const archive = localArchive || path.join(cacheDir, lock.runtimePack.file);
   if (!localArchive) {
     console.log(`[env] 下载 runtime pack（${lock.runtimePack.sizeHint}）`);
-    download(`${baseUrl()}/${lock.runtimePack.file}`, archive);
+    download(`${componentBaseUrl(lock.runtimePack)}/${lock.runtimePack.file}`, archive);
     await verifySha256(archive, lock.runtimePack.sha256);
   }
   // 只清 ilcompiler 子目录：runtime/ 根下还有仓库跟踪的 OpenHarmony.NET.Runtime.targets，

@@ -28,9 +28,12 @@ hvigor 的打包 `app_packing_tool.jar` 与签名 `hap-sign-tool.jar` 都是 Jav
 | devecocli | workspace devDependency，随 pnpm install | 调试签名材料生成 |
 | `apps/tesslo/assets/fetched/` | 已入库 | 离线素材库（无需联网） |
 
-CLT 与 runtime pack 托管在本仓 GitHub Release [`tools`](https://github.com/yuanbaobaoo/Tesslo/releases/tag/tools)，
-版本与 SHA-256 锁定在 `scripts/toolchain.lock.json`；.NET 走官方 CDN 并在安装后用
-`dotnet --version` 校验。CI 使用同一 lock（分卷拼接后校验整包哈希）。
+CLT 分卷托管在 GitCode [`ohos-tools` v26.0](https://gitcode.com/yuanbaobaoo/ohos-tools/releases/v26.0)
+（国内 CDN 直连），runtime pack 托管在本仓 GitHub Release
+[`tools`](https://github.com/yuanbaobaoo/Tesslo/releases/tag/tools)；版本与 SHA-256
+锁定在 `scripts/toolchain.lock.json`（linux 分卷哈希取自 GitCode 资产摘要，整包哈希
+与 CI 锁定值一致）。.NET 走微软官方 CDN 并在安装后用 `dotnet --version` 校验。
+CI 的 Linux CLT 仍从 GitHub Release 拉取（851 同源同哈希），暂未切换到 GitCode。
 
 ## 环境检测与自愈（scripts/env.mjs）
 

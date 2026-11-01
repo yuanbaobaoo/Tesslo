@@ -1,16 +1,19 @@
 {
-  "comment": "环境自愈组件清单：版本、下载源与 SHA-256 的单一事实源。scripts/env.mjs 读取。支持平台：mac-arm64、linux-x64（mac-x64/Intel 不支持，不提供资产；windows-x64 资产已备、脚本链路未适配）。",
-  "baseUrl": "https://github.com/yuanbaobaoo/Tesslo/releases/download/tools",
+  "comment": "环境自愈组件清单：版本、下载源与 SHA-256 的单一事实源。scripts/env.mjs 读取。CLT 分卷托管在 GitCode ohos-tools v26.0（国内 CDN），runtime pack 托管在本仓 GitHub Release tools。支持平台：mac-arm64、linux-x64（Intel mac 不支持；windows-x64 资产已备、脚本链路未适配）。linux 分卷哈希取自 GitCode 资产摘要，整包哈希与 CI 锁定值一致。",
   "clt": {
+    "baseUrl": "https://gitcode.com/yuanbaobaoo/ohos-tools/releases/download/v26.0",
     "linux-x64": {
       "version": "26.0.0.851",
       "parts": [
         "commandline-tools-linux-x64-26.0.0.851.zip.part1",
         "commandline-tools-linux-x64-26.0.0.851.zip.part2"
       ],
-      "partSha256": [null, null],
+      "partSha256": [
+        "c57ebdd4850bbd1eb4744da661e58c0e3fed5c492fdd2aa35c4d91edd22166d7",
+        "830ae286a66d89a43f7a88504ffab4c13317b72e29efb15bbc722b4ce16f2837"
+      ],
       "sha256": "ab604bd92721d5cbcafd154e6461d46b9f1b105e7b89eab04a9d046681198082",
-      "sizeHint": "~2.1 GB"
+      "sizeHint": "~2.2 GB"
     },
     "mac-arm64": {
       "version": "26.0.0.865",
@@ -51,6 +54,7 @@
     "comment": "官方 CDN 无哈希锁定，安装后以 dotnet --version 必须输出 9.0.104 做功能校验"
   },
   "runtimePack": {
+    "baseUrl": "https://github.com/yuanbaobaoo/Tesslo/releases/download/tools",
     "file": "ohos-net-runtime-pack-linux-musl-arm64.tar.zst",
     "sha256": "26f438553bd845a48ed5f667c45f2fde6e45c2df10b8f88a1ef51db771cc80ed",
     "sizeHint": "~47 MB",
