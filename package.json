@@ -7,7 +7,11 @@
   "license": "AGPL-3.0-only",
   "packageManager": "pnpm@11.21.0",
   "scripts": {
-    "build": "pnpm build:editor && pnpm build:web",
+    "postinstall": "node scripts/env.mjs ensure",
+    "env:status": "node scripts/env.mjs status",
+    "env:install": "node scripts/env.mjs install",
+    "build": "pnpm build:editor && pnpm build:web && pnpm build:link:csharp && pnpm build:hap && pnpm build:app",
+    "build:signed": "pnpm build:editor && pnpm build:web && pnpm build:link:csharp && pnpm build:hap --signed && pnpm build:app --signed",
     "build:editor": "pnpm build:blocks && pnpm build:storage && pnpm build:svg-renderer && pnpm build:render && pnpm build:vm && pnpm build:audio && pnpm build:l10n && pnpm build:paint && pnpm build:gui",
     "build:blocks": "pnpm --filter scratch-blocks build",
     "build:storage": "pnpm --filter scratch-storage build",
@@ -19,13 +23,17 @@
     "build:paint": "pnpm --filter scratch-paint build",
     "build:gui": "pnpm --filter @scratch/scratch-gui run clean && pnpm --filter @scratch/scratch-gui run build:dist",
     "build:web": "pnpm --filter @tesslo/app build:web",
-    "build:link:csharp": "node scripts/build-link-csharp.mjs",
-    "build:hap": "node scripts/build-hap.mjs",
-    "dev:ohos": "node scripts/dev-ohos.mjs",
+    "build:link:csharp": "node scripts/env.mjs ensure --for link && node scripts/build-link-csharp.mjs",
+    "build:hap": "node scripts/env.mjs ensure --for hap && node scripts/build-hap.mjs",
+    "build:app": "node scripts/env.mjs ensure --for app && node scripts/build-hap.mjs --app",
+    "dev:ohos": "node scripts/env.mjs ensure --for signed && node scripts/dev-ohos.mjs",
     "test": "pnpm test:link",
     "test:link": "node --test packages/scratch-link/test/*.test.js tests/*.test.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@deveco/deveco-cli": "1.3.0-stable"
   }
 }

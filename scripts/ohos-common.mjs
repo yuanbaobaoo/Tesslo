@@ -6,11 +6,13 @@ import {fileURLToPath} from 'node:url';
 // 仓库与产物路径约定（rawfile、dist 均为构建生成物，不入库）
 export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-// 加载仓库根目录的 .env（可选）。已存在的环境变量优先，不会被 .env 覆盖。
+// 加载仓库根目录的 .env 文件（可选）。已存在的环境变量优先，不会被覆盖。
+// 加载顺序：真实环境变量 > .env（用户显式声明） > .env.toolchain（env.mjs 生成）。
 // 支持的变量见 .env.example：
 //   OHOS_COMMAND_LINE_TOOLS_ROOT / OHOS_SDK_ROOT / DOTNET_ROOT / JAVA_HOME
-function loadDotEnv() {
-  const envPath = path.join(repoRoot, '.env');
+//   OHOS_NET_RUNTIME_PACK / TESSLO_TOOLS_BASE_URL
+function loadDotEnv(fileName) {
+  const envPath = path.join(repoRoot, fileName);
   if (!fs.existsSync(envPath)) return;
   for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
     const trimmed = line.trim();
@@ -27,8 +29,9 @@ function loadDotEnv() {
     }
     if (!(key in process.env)) process.env[key] = value;
   }
-};
-loadDotEnv();
+}
+loadDotEnv('.env.toolchain');
+loadDotEnv('.env');
 
 // HAP 工程根（hvigor 工作目录）
 export const appRoot = path.join(repoRoot, 'apps/tesslo');
@@ -73,12 +76,14 @@ export function runPnpm(args, options = {}) {
   return run(pnpm, args, {cwd: repoRoot, ...options});
 }
 
-// 常见安装位置依次探测，找到带 bin/hvigorw 的第一个为止
+// 常见安装位置依次探测，找到带 bin/hvigorw 的第一个为止。
+// .toolchain/ 是 env.mjs 自愈安装的约定落点，优先于系统位置。
 function commandLineToolCandidates() {
   const candidates = [];
   if (process.env.OHOS_COMMAND_LINE_TOOLS_ROOT) {
     candidates.push(process.env.OHOS_COMMAND_LINE_TOOLS_ROOT);
   }
+  candidates.push(path.join(repoRoot, '.toolchain/command-line-tools'));
   if (process.env.HOME) {
     candidates.push(path.join(process.env.HOME, 'command-line-tools'));
   }
@@ -226,6 +231,21 @@ export function ensureLink() {
 }
 
 /**
+ * 自恢复版 ensureLink：.so 被 gitignore，新克隆必然缺失，此时自动补跑
+ * build:link:csharp（其自身会先走 env.mjs ensure --for link 自愈工具链）。
+ */
+export function ensureLinkOrBuild() {
+  const dir = path.join(hapRoot, 'entry/libs/arm64-v8a');
+  const missing = ['libtesslolink.so', 'ScratchLinkOhos.so'].filter(
+    name => !fs.existsSync(path.join(dir, name))
+  );
+  if (!missing.length) return;
+  console.log(`[ohos] ${missing.join('、')} 缺失；自动执行 pnpm build:link:csharp`);
+  runPnpm(['build:link:csharp']);
+  ensureLink();
+}
+
+/**
  * 保证 build-profile.json5 存在：没有本地配置时从模板复制。
  */
 export function ensureProfile() {
@@ -240,6 +260,7 @@ export function ensureProfile() {
 
 /**
  * 签名构建前置：没有签名配置时用 devecocli 生成本地调试签名材料。
+ * devecocli 是 workspace devDependency，经 pnpm exec 调用，不依赖全局安装。
  */
 export function ensureSigning() {
   const profile = path.join(hapRoot, 'build-profile.json5');
@@ -248,7 +269,7 @@ export function ensureSigning() {
   if (!text.includes('signingConfigs')) {
     console.log('[ohos] no signing config; generating debug signing material with devecocli');
     const toolchain = resolveToolchain();
-    run('devecocli', ['signature', 'generate', '--product', 'default'], {
+    runPnpm(['exec', 'devecocli', 'signature', 'generate', '--product', 'default'], {
       cwd: hapRoot,
       env: {...toolchain.env, DEVECO_CLI_CLT_PATH: toolchain.root}
     });
@@ -259,31 +280,67 @@ export function ensureSigning() {
  * 在产物目录里找 HAP；signed=true 时缺签名包返回 null，绝不回退未签名包。
  */
 export function findHap({signed = true} = {}) {
-  const outputDir = path.join(hapRoot, 'entry/build/default/outputs/default');
-  if (!fs.existsSync(outputDir)) return null;
-  const haps = fs
-    .readdirSync(outputDir)
-    .filter(name => name.endsWith('.hap'))
-    .map(name => path.join(outputDir, name));
-  const signedHap = haps.find(file => file.endsWith('-signed.hap'));
-  const unsignedHap = haps.find(file => file.endsWith('-unsigned.hap'));
-  if (signed) {
-    // 签名包缺失时不能静默回退到未签名包，否则真机安装会失败且难以定位
-    return signedHap || null;
-  }
-  return unsignedHap || haps[0] || null;
+  return findArtifact({
+    signed,
+    dir: path.join(hapRoot, 'entry/build/default/outputs/default'),
+    ext: '.hap'
+  });
 }
 
 /**
- * 完整 HAP 构建：编辑器产物 -> Link .so 校验 -> rawfile 装载 -> hvigor assembleHap。
+ * 在工程级产物目录里找 App 包（assembleApp 产物）；签名语义与 findHap 一致。
+ */
+export function findApp({signed = true} = {}) {
+  return findArtifact({
+    signed,
+    dir: path.join(hapRoot, 'build/outputs/default'),
+    ext: '.app'
+  });
+}
+
+/**
+ * 产物查找公共实现：signed=true 时缺签名包返回 null，绝不回退未签名包。
+ *
+ * @param {object} opts - signed: 签名要求；dir: 产物目录；ext: 扩展名
+ * @returns {string | null} 产物路径
+ */
+function findArtifact({signed, dir, ext}) {
+  if (!fs.existsSync(dir)) return null;
+  const files = fs
+    .readdirSync(dir)
+    .filter(name => name.endsWith(ext))
+    .map(name => path.join(dir, name));
+  const signedFile = files.find(file => file.endsWith(`-signed${ext}`));
+  const unsignedFile = files.find(file => file.endsWith(`-unsigned${ext}`));
+  if (signed) {
+    // 签名包缺失时不能静默回退到未签名包，否则真机安装会失败且难以定位
+    return signedFile || null;
+  }
+  return unsignedFile || files[0] || null;
+}
+
+/**
+ * 完整 HAP 构建：编辑器产物 -> Link .so 自恢复 -> rawfile 装载 -> hvigor assembleHap。
  * @param {object} opts - build: 是否强制重建编辑器；signed: true 走签名流程，
  *   false 用模板 profile（无签名配置）并在结束后还原本地 profile。
  * @returns {{hap: string, toolchain: object}} 产物路径与工具链信息
  */
-export function buildHap({build = false, signed = true} = {}) {
+export function buildHap(opts = {}) {
+  const {artifact, toolchain} = buildPackage({...opts, mode: 'hap'});
+  return {hap: artifact, toolchain};
+}
+
+/**
+ * 完整包构建公共流程：编辑器产物 -> Link .so 自恢复 -> rawfile 装载 -> hvigor 打包。
+ * mode='hap' 产出可单装的 HAP；mode='app' 产出上架用 App 包（assembleApp）。
+ * @param {object} opts - build: 强制重建编辑器；signed: 签名开关（默认 false 出未签名包）；
+ *   mode: 'hap' | 'app'
+ * @returns {{artifact: string, toolchain: object}} 产物路径与工具链信息
+ */
+export function buildPackage({build = false, signed = false, mode = 'hap'} = {}) {
   const toolchain = resolveToolchain();
   ensureEditorBuild({build});
-  ensureLink();
+  ensureLinkOrBuild();
   stageWebPayload();
   ensureProfile();
   const profilePath = path.join(hapRoot, 'build-profile.json5');
@@ -298,14 +355,18 @@ export function buildHap({build = false, signed = true} = {}) {
   } else {
     ensureSigning();
   }
-  for (const dir of ['.hvigor', 'entry/build']) {
+  // app 产物在工程级 build/ 下，一并清理保证产物确定
+  for (const dir of ['.hvigor', 'entry/build', 'build']) {
     fs.rmSync(path.join(hapRoot, dir), {recursive: true, force: true});
   }
-  console.log('[ohos] hvigor assembleHap');
+  const task = mode === 'app' ? 'assembleApp' : 'assembleHap';
+  // assembleApp 是工程级任务（注册在 project 上），--mode module 会报 task not found
+  const hvigorMode = mode === 'app' ? 'project' : 'module';
+  console.log(`[ohos] hvigor ${task}`);
   try {
     run(
       toolchain.hvigorw,
-      ['assembleHap', '--mode', 'module', '-p', 'product=default', '-p', 'buildMode=debug', '--no-daemon'],
+      [task, '--mode', hvigorMode, '-p', 'product=default', '-p', 'buildMode=debug', '--no-daemon'],
       {cwd: hapRoot, env: toolchain.env}
     );
   } finally {
@@ -314,8 +375,8 @@ export function buildHap({build = false, signed = true} = {}) {
       fs.renameSync(backup, profilePath);
     }
   }
-  const hap = findHap({signed});
-  if (!hap) throw new Error('HAP was not produced');
-  console.log(`[ohos] HAP: ${hap}`);
-  return {hap, toolchain};
+  const artifact = mode === 'app' ? findApp({signed}) : findHap({signed});
+  if (!artifact) throw new Error(`${mode.toUpperCase()} was not produced`);
+  console.log(`[ohos] ${mode.toUpperCase()}: ${artifact}`);
+  return {artifact, toolchain};
 }

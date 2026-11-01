@@ -8,16 +8,24 @@ import {hapRoot, repoRoot} from './ohos-common.mjs';
 // （tesslo_link_napi.cpp -> libtesslolink.so），并部署进 HAP 的 entry/libs。
 // 改 C#/NAPI 的符号、参数或返回码后必须完整跑一次本脚本。
 
-// dotnet 宿主位置；默认 ~/.dotnet，可用 DOTNET_ROOT 覆盖
-const dotnetRoot = process.env.DOTNET_ROOT || path.join(process.env.HOME ?? '', '.dotnet');
-const dotnet = path.join(dotnetRoot, 'dotnet');
-if (!fs.existsSync(dotnet)) {
-  console.error(`[link:csharp] dotnet not found at ${dotnet}; install .NET 9.0.104 first`);
+// dotnet 宿主位置：DOTNET_ROOT（含 env.mjs 生成的 .env.toolchain）→ 仓库内自愈安装
+// → ~/.dotnet。.NET 版本随 ohos-net.lock.json 锁定 9.0.104，10.x 会因 SDK resolver 不兼容失败
+const dotnetCandidates = [
+  process.env.DOTNET_ROOT,
+  path.join(repoRoot, '.toolchain/dotnet'),
+  process.env.HOME && path.join(process.env.HOME, '.dotnet')
+].filter(Boolean);
+const dotnetRoot = dotnetCandidates.find(root => fs.existsSync(path.join(root, 'dotnet')));
+if (!dotnetRoot) {
+  console.error('[link:csharp] dotnet not found; run `pnpm env:install dotnet` or set DOTNET_ROOT');
   process.exit(1);
 }
+const dotnet = path.join(dotnetRoot, 'dotnet');
 
 const sdkCandidates = [
   process.env.OHOS_SDK_ROOT,
+  // env.mjs 自愈安装的 CLT 自带 Native SDK
+  path.join(repoRoot, '.toolchain/command-line-tools/sdk/default'),
   // 本机固定版本回退路径；仅作兜底，优先用 OHOS_SDK_ROOT 覆盖
   '/Users/Shared/local/ohos/command-line-tools_26.0.0_Beta1/sdk/default',
   process.env.HOME && path.join(process.env.HOME, 'Library/Huawei/Sdk'),

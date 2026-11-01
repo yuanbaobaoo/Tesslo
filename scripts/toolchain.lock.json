@@ -1,0 +1,61 @@
+{
+  "comment": "环境自愈组件清单：版本、下载源与 SHA-256 的单一事实源。scripts/env.mjs 读取。支持平台：mac-arm64、linux-x64（mac-x64/Intel 不支持，不提供资产；windows-x64 资产已备、脚本链路未适配）。",
+  "baseUrl": "https://github.com/yuanbaobaoo/Tesslo/releases/download/tools",
+  "clt": {
+    "linux-x64": {
+      "version": "26.0.0.851",
+      "parts": [
+        "commandline-tools-linux-x64-26.0.0.851.zip.part1",
+        "commandline-tools-linux-x64-26.0.0.851.zip.part2"
+      ],
+      "partSha256": [null, null],
+      "sha256": "ab604bd92721d5cbcafd154e6461d46b9f1b105e7b89eab04a9d046681198082",
+      "sizeHint": "~2.1 GB"
+    },
+    "mac-arm64": {
+      "version": "26.0.0.865",
+      "parts": [
+        "commandline-tools-mac-arm64-26.0.0.865.zip.part1",
+        "commandline-tools-mac-arm64-26.0.0.865.zip.part2"
+      ],
+      "partSha256": [
+        "cec2f76626ac50302317d62d7cd4ceb232898eecbecd2e072c94688965dc645b",
+        "31be5940d1a02d03b87720ab4352d03c27a7395398838dc336ee68b758f0ed80"
+      ],
+      "sha256": "6fd8293cccd2c9b430e019fc7388d4bdd1569c2afae303acc3f0972f640e3383",
+      "sizeHint": "~2.0 GB"
+    },
+    "windows-x64": {
+      "version": "26.0.0.865",
+      "parts": [
+        "commandline-tools-windows-x64-26.0.0.865.zip.part1",
+        "commandline-tools-windows-x64-26.0.0.865.zip.part2"
+      ],
+      "partSha256": [
+        "3cf0d00bdafde304893be377a62b120abfca85804e2d1b3dc8d03a8400e63858",
+        "c3193ef0519ccf41fcef2d5ff1805692988aa42e593348e58142e1bb2dfb560e"
+      ],
+      "sha256": "fedd06dccfd6134e93ca7727b6d202fcf47c3bc9c3a26a61ae7f2ccb97cf159a",
+      "sizeHint": "~2.5 GB"
+    }
+  },
+  "dotnet": {
+    "version": "9.0.104",
+    "urls": {
+      "darwin-arm64": "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.104/dotnet-sdk-9.0.104-osx-arm64.tar.gz",
+      "darwin-x64": "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.104/dotnet-sdk-9.0.104-osx-x64.tar.gz",
+      "linux-x64": "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.104/dotnet-sdk-9.0.104-linux-x64.tar.gz"
+    },
+    "sha256": null,
+    "sizeHint": "~130 MB",
+    "comment": "官方 CDN 无哈希锁定，安装后以 dotnet --version 必须输出 9.0.104 做功能校验"
+  },
+  "runtimePack": {
+    "file": "ohos-net-runtime-pack-linux-musl-arm64.tar.zst",
+    "sha256": "26f438553bd845a48ed5f667c45f2fde6e45c2df10b8f88a1ef51db771cc80ed",
+    "sizeHint": "~47 MB",
+    "format": "tar.zst",
+    "targetDir": "packages/scratch-link/ohos-net/runtime",
+    "anchor": "runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler/sdk/System.Private.CoreLib.dll"
+  }
+}

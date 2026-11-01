@@ -14,6 +14,8 @@ overrides:
   upath: 1.2.0
 
 allowBuilds:
+  # devecocli 的 postinstall 只是后台文档索引，CLI 功能不依赖它
+  '@deveco/deveco-cli': false
   canvas: false
   core-js: false
   electron-winstaller: false

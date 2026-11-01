@@ -17,6 +17,8 @@ packages/*/dist.js
 signing.*.local.json
 .idea
 .env
+.env.toolchain
+.toolchain/
 
 apps/tesslo/entry/libs/
 apps/tesslo/entry/src/main/resources/rawfile/
