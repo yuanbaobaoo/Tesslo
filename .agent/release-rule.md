@@ -10,7 +10,7 @@
 | 事件 | 行为 |
 | --- | --- |
 | push tag `v*` | `.github/workflows/ohos-hap.yml` 构建未签名 HAP，并发布为该 tag 的 GitHub Release |
-| push master | 构建并上传 Actions Artifact，**不发 Release**（dev 构建） |
+| push master | **不触发 CI**（门禁在本地 `pnpm test`；master 仅承载发版 commit） |
 | `workflow_dispatch` | 构建并上传 Actions Artifact，**不发 Release**（流程验证） |
 
 CI 侧使用 `permissions: contents: write` + `softprops/action-gh-release`，
@@ -52,7 +52,7 @@ Tesslo-v0.1.0-unsigned.hap
 Tesslo-v0.1.1-unsigned.hap
 ```
 
-非 Release 构建（master / `workflow_dispatch`）：
+非 Release 构建（仅 `workflow_dispatch`）：
 
 ```text
 Tesslo-vX.Y.Z-dev.<GITHUB_RUN_NUMBER>-unsigned.hap
@@ -108,8 +108,8 @@ Tesslo-vX.Y.Z-dev.<GITHUB_RUN_NUMBER>-unsigned.hap
 - 离线素材在 `apps/tesslo/assets/fetched`，随仓库提交，不是 Release 资产；
   构建不访问 CDN。
 - 本仓库只发 HarmonyOS HAP；macOS/Windows/Linux 官方构建不在 CI 范围内。
-- master push 只产出 dev Artifact，不是 Release；不要把
-  `Tesslo-vX.Y.Z-dev.*` 当正式版分发。
+- master push 不触发任何 CI；只有 tag 才构建发版。dev 构建（仅
+  `workflow_dispatch`）不是 Release，不要把 `Tesslo-vX.Y.Z-dev.*` 当正式版分发。
 - 真机已装 dev 构建时，与 Release 版签名不同属预期；`install -r` 保留应用数据。
 
 ## 坑
@@ -125,19 +125,21 @@ Tesslo-vX.Y.Z-dev.<GITHUB_RUN_NUMBER>-unsigned.hap
 - 不要删除/移动 `tools` Release 的 CLT 或 runtime pack 资产；
   CI 的 SHA-256 校验会直接失败。
 
-## CI 配套修改清单（待实现）
+## CI 配套修改清单（已实现）
 
-- [ ] `Collect artifact & checksums`：tag 用
-  `Tesslo-${GITHUB_REF_NAME}-unsigned.hap`；非 tag 用
+- [x] 触发收敛：`ohos-hap.yml` 仅 `push tag v*` + `workflow_dispatch`；
+  `test.yml` 仅 PR。push master 不触发任何 CI。
+- [x] `Collect artifact & checksums`：tag 用
+  `Tesslo-${GITHUB_REF_NAME}-unsigned.hap`；非 tag（dispatch）用
   `Tesslo-v${VERSION}-dev.${GITHUB_RUN_NUMBER}-unsigned.hap`。
-- [ ] `Upload artifact`：name 使用同一基名（去掉 `.hap`）。
-- [ ] `Prepare latest alias artifact`：仅稳定 tag 生成
+- [x] `Upload artifact`：name 使用同一基名（去掉 `.hap`）。
+- [x] `Prepare latest alias artifact`：仅稳定 tag 生成
   `Tesslo-latest-unsigned.hap`；`-rc` 跳过。
-- [ ] `Publish Release`：files glob 改为 `Tesslo-*-unsigned.hap`、
-  `Tesslo-latest-unsigned.hap`、`sha256.txt`。
-- [ ] `Compose release body`：latest 直链改为
+- [x] `Publish Release`：files 改为 `Tesslo-v*-unsigned.hap`、
+  `Tesslo-latest-unsigned.hap`、`sha256.txt`；预发布 tag 标记 prerelease。
+- [x] `Compose release body`：latest 直链改为
   `Tesslo-latest-unsigned.hap`；标题用 tag。
-- [ ] 新增 `Verify release version`：tag 时校验
+- [x] 新增 `Verify release version`：tag 时校验
   `GITHUB_REF_NAME == v$(node -p "require('./package.json').version")`，
-  并校验 `AppScope/app.json5` 的 `versionName`。
-- [ ] README：latest 直链改名为 `Tesslo-latest-unsigned.hap`。
+  并校验 `apps/tesslo/package.json` 与 `AppScope/app.json5` 的 `versionName`。
+- [x] README：目前未放置 latest 直链，无需改动。

@@ -1,12 +1,10 @@
-# 纯 JS 测试（scratch-link 服务端 + 协议一致性），PR / push 均触发。
-# 不需要 OHOS 工具链，跑 pnpm test 即可。
+# 纯 JS 测试（scratch-link 服务端 + 协议一致性），仅 PR 触发。
+# push master 不触发 CI：门禁在本地（pnpm test，见 .agent/release-rule.md）；
+# tag 发版链路的测试在 ohos-hap.yml 内执行。
 
 name: Test
 
 on:
-  push:
-    branches:
-      - master
   pull_request:
 
 jobs:

@@ -1,17 +1,15 @@
 # HarmonyOS HAP 自动构建与发版
 #
-# 触发路径：
-#   - push master：构建未签名 HAP，产物进 Artifact（不发 Release）；
+# 触发路径（唯一发版通道见 .agent/release-rule.md）：
 #   - push tag v*：构建 + 未签名 HAP 发该 tag Release；
-#   - workflow_dispatch：手动构建，产物进 Artifact。
+#   - workflow_dispatch：手动构建，产物进 Artifact（不发 Release）。
+# push master 不触发 CI：门禁（pnpm test）在本地完成，master 仅承载发版 commit。
 # 工具链与依赖细节（CLT 分卷托管、ohos-net runtime pack、离线素材包）见本文件内注释。
 
 name: OHOS HAP
 
 on:
   push:
-    branches:
-      - master
     tags:
       - "v*"
   workflow_dispatch:
@@ -55,6 +53,29 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+
+      # 规则：tag 必须与三处版本源一致（.agent/release-rule.md），不一致即刻失败，
+      # 不依赖人工检查。放在工具链安装之前，尽早暴露。
+      - name: Verify release version (tag only)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -e
+          VERSION="$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "v${VERSION}" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} 与 package.json 版本 v${VERSION} 不一致"
+            exit 1
+          fi
+          APPS_VERSION="$(node -p "require('./apps/tesslo/package.json').version")"
+          if [ "$APPS_VERSION" != "$VERSION" ]; then
+            echo "::error::apps/tesslo/package.json 版本 ${APPS_VERSION} 与根版本 ${VERSION} 不一致"
+            exit 1
+          fi
+          VERSION_NAME="$(sed -n 's/.*"versionName"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' apps/tesslo/AppScope/app.json5)"
+          if [ "$VERSION_NAME" != "$VERSION" ]; then
+            echo "::error::AppScope/app.json5 versionName ${VERSION_NAME} 与 ${VERSION} 不一致"
+            exit 1
+          fi
+          echo "版本一致：tag=${GITHUB_REF_NAME} versionName=${VERSION_NAME}"
 
       # 与本仓 docs/build.md、.env.example 保持一致：hvigor/devecocli 使用 JDK 21。
       - uses: actions/setup-java@v4
@@ -163,29 +184,39 @@ jobs:
             echo "::error::未找到未签名 HAP，实际内容: $(ls "$OUT" 2>/dev/null | tr '\n' ' ')"
             exit 1
           fi
-          cp "$OUT"/*-unsigned.hap "dist/Tesslo-${GITHUB_REF_NAME}-ohos-arm64-unsigned.hap"
+          # 版本号来自 package.json（唯一版本源）；禁止 GITHUB_REF_NAME 原样拼名
+          # （master 会得到 Tesslo-master-...，见 release-rule.md 的坑）。
+          VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            BASE="Tesslo-${GITHUB_REF_NAME}"
+          else
+            BASE="Tesslo-v${VERSION}-dev.${GITHUB_RUN_NUMBER}"
+          fi
+          cp "$OUT"/*-unsigned.hap "dist/${BASE}-unsigned.hap"
+          echo "ARTIFACT_BASE=${BASE}" >> "$GITHUB_ENV"
           cd dist
-          sha256sum Tesslo-*.hap > sha256.txt
+          sha256sum "${BASE}-unsigned.hap" > sha256.txt
           cat sha256.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ohos-hap-unsigned
+          # Artifact 名称与 HAP 基名一致（去掉 .hap）
+          name: ${{ env.ARTIFACT_BASE }}
           path: |
-            dist/Tesslo-*-ohos-arm64-unsigned.hap
+            dist/${{ env.ARTIFACT_BASE }}-unsigned.hap
             dist/sha256.txt
           retention-days: 14
           if-no-files-found: error
 
-      # 版本无关的 latest 别名资产：让 README 的
-      # releases/latest/download/Tesslo-latest-ohos-arm64-unsigned.hap 直链始终可下载。
+      # 版本无关的 latest 别名资产：仅稳定版 tag 覆盖（-rc 预发布跳过），
+      # 让 releases/latest/download/Tesslo-latest-unsigned.hap 直链始终可下载。
       - name: Prepare latest alias artifact
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-')
         run: |
           cd dist
-          cp "Tesslo-${GITHUB_REF_NAME}-ohos-arm64-unsigned.hap" Tesslo-latest-ohos-arm64-unsigned.hap
-          sha256sum Tesslo-latest-ohos-arm64-unsigned.hap >> sha256.txt
+          cp "${ARTIFACT_BASE}-unsigned.hap" Tesslo-latest-unsigned.hap
+          sha256sum Tesslo-latest-unsigned.hap >> sha256.txt
 
       # Release 说明 = 上一个 tag 以来的真实提交列表 + 固定的安装/校验说明。
       # 不从 commit message 之外编造内容；首个 tag（无前驱）时列最近 20 条。
@@ -215,7 +246,7 @@ jobs:
             echo "### 安装与校验"
             echo
             echo "- 未签名 HAP（HarmonyOS / arm64）：需自行签名（debug Profile 绑定设备）后安装，或从源码构建"
-            echo "- 完整性：附件 sha256.txt；长期直链 Tesslo-latest-ohos-arm64-unsigned.hap 每次发版覆盖更新"
+            echo "- 完整性：附件 sha256.txt；长期直链 Tesslo-latest-unsigned.hap 每次稳定版发布覆盖更新"
           } > release-body.md
           cat release-body.md
 
@@ -224,8 +255,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/Tesslo-*-ohos-arm64-unsigned.hap
-            dist/Tesslo-latest-ohos-arm64-unsigned.hap
+            dist/Tesslo-v*-unsigned.hap
+            dist/Tesslo-latest-unsigned.hap
             dist/sha256.txt
           body_path: release-body.md
           generate_release_notes: false
+          # vX.Y.Z-rc.N 等预发布（含 '-'）标记 prerelease，不更新 latest 指向
+          prerelease: ${{ contains(github.ref_name, '-') }}
