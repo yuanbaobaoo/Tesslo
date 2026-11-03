@@ -12,6 +12,20 @@
           },
         },
       },
+      // 上架 product：build:app 用 -p product=release 选择。配置上架签名时在
+      // signingConfigs 里加 name: 'release' 条目（材料/密码见 docs/release-signing.md），
+      // 并给本 product 加 signingConfig: 'release' 一行。
+      {
+        name: 'release',
+        compatibleSdkVersion: '26.0.0',
+        compatibleSdkVersionStage: 'release',
+        runtimeOS: 'HarmonyOS',
+        buildOption: {
+          nativeLib: {
+            collectAllLibs: true,
+          },
+        },
+      },
     ],
     buildModeSet: [
       { name: 'debug' },
@@ -25,7 +39,7 @@
       targets: [
         {
           name: 'default',
-          applyToProducts: ['default'],
+          applyToProducts: ['default', 'release'],
         },
       ],
     },

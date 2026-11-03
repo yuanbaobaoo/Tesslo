@@ -31,3 +31,6 @@ apps/tesslo/build-profile.json5
 packages/scratch-link/ohos-net/runtime/runtime.linux-musl-*/
 packages/scratch-link/napi/*.so
 apps/tesslo/build-profile*.local
+
+# signing:keygen 产物（含私钥，绝不入库）
+.certs/

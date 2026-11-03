@@ -78,8 +78,8 @@ docs/                          架构、移植、构建与真机验证文档
 ```sh
 git clone https://github.com/yuanbaobaoo/Tesslo && cd Tesslo
 pnpm install               # 依赖 + 环境自愈：缺失工具链确认后自动下载
-pnpm build                 # 全链：编辑器 → Web → C# Link → 未签名 HAP + App
-pnpm build:signed          # 需要签名包时（华为账号调试签名，首次需登录）
+pnpm build:hap             # 全链：编辑器 → Web → C# Link → 未签名 HAP（--signed 调试签名）
+pnpm build:app             # 全链 → 上架 App 包（release 模式 + release 签名）
 pnpm dev:ohos -- --device <serial>   # 安装到设备并启动
 ```
 
@@ -97,6 +97,7 @@ pnpm dev:ohos -- --device <serial>   # 安装到设备并启动
 | [ArkWeb 宿主](docs/arkweb-host.md) | ArkWeb 页面、能力边界与离线素材服务 |
 | [Scratch Link 移植](docs/link-port.md) | C# Link、NativeAOT、NAPI、BLE 桥 |
 | [构建与打包](docs/build.md) | pnpm 脚本、HAP 结构、签名与离线构建 |
+| [发布签名](docs/release-signing.md) | 上架签名材料、流程、安全模型与排查 |
 | [真机验证](docs/device-testing.md) | 安装、日志、Link 与模拟外设验证 |
 
 ## 许可

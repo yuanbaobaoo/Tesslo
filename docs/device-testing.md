@@ -8,8 +8,7 @@
 - 已构建 Web 编辑器、C# Link。
 
 ```sh
-pnpm build
-pnpm build:link:csharp
+pnpm build:hap
 pnpm dev:ohos -- --device <serial>
 ```
 
