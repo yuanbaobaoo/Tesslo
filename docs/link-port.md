@@ -14,8 +14,9 @@ TCP 命令桥。
 
 ```text
 packages/scratch-link
-  scratch-link-common/   上游共享层：Session/JSON-RPC/Fleck WebSocket（零改动，
-                         以共享源码方式编译进 scratch-link-ohos）
+  scratch-link-common/   上游共享层：Session/JSON-RPC/Fleck WebSocket；仅做 AOT
+                         必要补丁（JSON-RPC 源生成上下文与异常兜底），以共享
+                         源码方式编译进 scratch-link-ohos
   scratch-link-win/      上游 Windows 实现（保留不构建，供对照）
   scratch-link-mac/      上游 macOS 实现（保留不构建，供对照）
   scratch-link-ohos/     OHOS 平台实现：SessionManager/GattHelpers/BLE 会话与
@@ -30,9 +31,11 @@ packages/scratch-link
 ```text
 ScratchLinkOhos.so    NativeAOT 共享库（linux-musl-arm64，含上游 common）
 libtesslolink.so      NAPI 模块，被 ArkTS import
+libssl.so.3           OpenSSL 兼容层：补 runtime pack 缺失符号，转发 libssl_ohos.so
+libssl_ohos.so        runtime pack 自带的 OpenSSL 1.1.1w（精简构建）
 ```
 
-两者与 `libc++_shared.so` 一起部署到
+以上与 `libc++_shared.so` 一起部署到
 `apps/tesslo/entry/libs/arm64-v8a/`。
 
 同步上游：`git fetch scratch-link && git merge -Xsubtree=packages/scratch-link scratch-link/main`。
@@ -106,6 +109,10 @@ Scratch Link 的会话状态。
   单独的 ArkTS 适配后再开放。
 - 上游 `ScratchLinkApp` 硬编码监听 `0.0.0.0:20111`；如需限定回环地址或
   可配置端口，需要对上游提 patch。
-- NativeAOT 依赖反射根（`rd.xml`，DI 构造与 System.Text.Json 反射路径），
-  当前 `Dynamic="Required All"` 保正确性，库体积 ~36MB，待真机验证后
-  可换精确清单收窄。
+- runtime pack 的 `libssl.so.3` 是精简 OpenSSL 1.1.1w，缺少 .NET OpenSSL
+  shim 初始化所需的 `OCSP_basic_verify`、`PKCS7_sign` 与
+  `OpenSSL_version_num`。`napi/openssl_compat.c` 生成同名兼容层补齐这些
+  符号并转发到真实库；Scratch Link 不使用证书/OCSP 路径。
+- NativeAOT 反射根（`rd.xml`）只用于 DI 构造；JSON-RPC 已改走源生成
+  `JsonRpcJsonContext`，Fleck 的 async void 回调在 `Session` 内兜底异常，
+  单条坏消息不会再终止进程。

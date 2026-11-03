@@ -82,6 +82,8 @@ const nativeRoot = fs.existsSync(path.join(sdkRoot, 'openharmony/native'))
   : path.join(sdkRoot, 'native');
 // NAPI 桥：把 C# 的 [UnmanagedCallersOnly] 导出包装成 Node-API 模块
 const clang = path.join(nativeRoot, 'llvm/bin/clang++');
+// 兼容层是 C 源码，必须用 clang（而非 clang++）编译，避免符号被 C++ mangle
+const clangC = path.join(nativeRoot, 'llvm/bin/clang');
 const shimSource = path.join(repoRoot, 'packages/scratch-link/napi/tesslo_link_napi.cpp');
 const shimOutput = path.join(repoRoot, 'packages/scratch-link/napi/libtesslolink.so');
 const shim = spawnSync(
@@ -117,6 +119,37 @@ if (!fs.existsSync(nativeOutput)) {
 }
 fs.rmSync(path.join(deployDir, 'TessloLinkNative.so'), {force: true});
 fs.copyFileSync(nativeOutput, path.join(deployDir, 'ScratchLinkOhos.so'));
+
+// Fleck WebSocket 握手的 SHA1 依赖 OpenSSL shim，运行时 dlopen libssl.so.3；
+// runtime pack 的精简 libssl 缺 OCSP_basic_verify / PKCS7_sign，不能直接作为
+// libssl.so.3 暴露。真实库改名随包，再由 openssl_compat.c 生成同名兼容层。
+const opensslOutput = path.join(path.dirname(nativeOutput), 'libssl.so.3');
+if (!fs.existsSync(opensslOutput)) {
+  console.error(`[link:csharp] expected OpenSSL runtime not found: ${opensslOutput}`);
+  process.exit(1);
+}
+fs.copyFileSync(opensslOutput, path.join(deployDir, 'libssl_ohos.so'));
+const opensslCompatSource = path.join(repoRoot, 'packages/scratch-link/napi/openssl_compat.c');
+const opensslCompat = spawnSync(
+  clangC,
+  [
+    '--target=aarch64-linux-ohos',
+    `--sysroot=${path.join(nativeRoot, 'sysroot')}`,
+    '-fPIC',
+    '-shared',
+    '-O2',
+    '-o',
+    path.join(deployDir, 'libssl.so.3'),
+    opensslCompatSource,
+    '-L',
+    deployDir,
+    '-Wl,--no-as-needed',
+    '-l:libssl_ohos.so'
+  ],
+  {stdio: 'inherit'}
+);
+if (opensslCompat.status !== 0) process.exit(opensslCompat.status ?? 1);
+
 fs.copyFileSync(shimOutput, path.join(deployDir, 'libtesslolink.so'));
 
 // OHOS 需要 libc++_shared.so 随包分发（C# AOT 运行时依赖）

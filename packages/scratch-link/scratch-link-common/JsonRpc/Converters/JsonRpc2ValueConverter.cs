@@ -16,8 +16,14 @@ using System.Text.Json.Serialization;
 internal class JsonRpc2ValueConverter : JsonConverter<object>
 {
     /// <inheritdoc/>
-    public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options) =>
+    public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+    {
+#if SCRATCHLINK_AOT
+        JsonSerializer.Serialize(writer, value, options.GetTypeInfo(value.GetType()));
+#else
         JsonSerializer.Serialize(writer, value, value.GetType(), options);
+#endif
+    }
 
     /// <inheritdoc/>
     public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.TokenType switch

@@ -147,47 +147,47 @@ internal abstract class BTSession<TDiscoveredPeripheral, TPeripheralAddress> : P
 
         await this.SendNotification("didDiscoverPeripheral", message);
     }
+}
+
+/// <summary>
+/// JSON-ready class to use when reporting that a peripheral was discovered.
+/// </summary>
+internal sealed class BTPeripheralDiscovered
+{
+    /// <summary>
+    /// Gets or sets the advertised name of the peripheral.
+    /// </summary>
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
 
     /// <summary>
-    /// JSON-ready class to use when reporting that a peripheral was discovered.
+    /// Gets or sets the ID which can be used for connecting to this peripheral.
     /// </summary>
-    protected class BTPeripheralDiscovered
-    {
-        /// <summary>
-        /// Gets or sets the advertised name of the peripheral.
-        /// </summary>
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Gets or sets the ID which can be used for connecting to this peripheral.
-        /// </summary>
-        [JsonPropertyName("peripheralId")]
-        public string PeripheralId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the relative signal strength of the advertisement.
-        /// </summary>
-        [JsonPropertyName("rssi")]
-        public int? RSSI { get; set; }
-    }
+    [JsonPropertyName("peripheralId")]
+    public string PeripheralId { get; set; }
 
     /// <summary>
-    /// JSON-ready class to use when reporting that data was received from a peripheral.
+    /// Gets or sets the relative signal strength of the advertisement.
     /// </summary>
-    protected class BTMessageReceived
-    {
-        /// <summary>
-        /// Gets or sets an optional encoding specifier (like "base64").
-        /// If this is missing, <see cref="Message"/> must be a UTF-8 string.
-        /// </summary>
-        [JsonPropertyName("encoding")]
-        public string Encoding { get; set; }
+    [JsonPropertyName("rssi")]
+    public int? RSSI { get; set; }
+}
 
-        /// <summary>
-        /// Gets or sets the message content, encoded as specified in the <see cref="Encoding"/> property.
-        /// </summary>
-        [JsonPropertyName("message")]
-        public string Message { get; set; }
-    }
+/// <summary>
+/// JSON-ready class to use when reporting that data was received from a peripheral.
+/// </summary>
+internal sealed class BTMessageReceived
+{
+    /// <summary>
+    /// Gets or sets an optional encoding specifier (like "base64").
+    /// If this is missing, <see cref="Message"/> must be a UTF-8 string.
+    /// </summary>
+    [JsonPropertyName("encoding")]
+    public string Encoding { get; set; }
+
+    /// <summary>
+    /// Gets or sets the message content, encoded as specified in the <see cref="Encoding"/> property.
+    /// </summary>
+    [JsonPropertyName("message")]
+    public string Message { get; set; }
 }

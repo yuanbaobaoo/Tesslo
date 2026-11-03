@@ -49,10 +49,12 @@ public class Session : IDisposable
 
     private readonly IWebSocketConnection webSocket;
 
+#if !SCRATCHLINK_AOT
     private readonly JsonSerializerOptions deserializerOptions = new ()
     {
         Converters = { new JsonRpc2MessageConverter(), new JsonRpc2ValueConverter() },
     };
+#endif
 
     private readonly SemaphoreSlim websocketSendLock = new (1);
 
@@ -103,19 +105,119 @@ public class Session : IDisposable
         };
         this.webSocket.OnMessage = async messageString =>
         {
-            var jsonMessage = JsonSerializer.Deserialize<JsonRpc2Message>(messageString, this.deserializerOptions);
-            await this.HandleMessage(jsonMessage);
+            await this.HandleIncomingMessage(() => DeserializeMessage(messageString));
         };
         this.webSocket.OnBinary = async messageBytes =>
         {
-            var jsonMessage = JsonSerializer.Deserialize<JsonRpc2Message>(messageBytes, this.deserializerOptions);
-            await this.HandleMessage(jsonMessage);
+            await this.HandleIncomingMessage(() => DeserializeMessage(messageBytes));
         };
 
         Trace.WriteLine("session running");
 
         // wait for OnClose() to mark the task as completed
         return runCompletion.Task;
+    }
+
+    /// <summary>
+    /// Decode one JSON-RPC message.
+    /// </summary>
+    /// <param name="message">UTF-8 JSON text.</param>
+    /// <returns>The decoded message, or null if the payload has no message shape.</returns>
+    private JsonRpc2Message? DeserializeMessage(string message)
+    {
+#if SCRATCHLINK_AOT
+        return JsonSerializer.Deserialize(
+            message,
+            JsonRpcSerialization.ReadOptions.GetTypeInfo(typeof(JsonRpc2Message))) as JsonRpc2Message;
+#else
+        return JsonSerializer.Deserialize<JsonRpc2Message>(message, this.deserializerOptions);
+#endif
+    }
+
+    /// <summary>
+    /// Decode one binary JSON-RPC message.
+    /// </summary>
+    /// <param name="message">UTF-8 JSON bytes.</param>
+    /// <returns>The decoded message, or null if the payload has no message shape.</returns>
+    private JsonRpc2Message? DeserializeMessage(ReadOnlySpan<byte> message)
+    {
+#if SCRATCHLINK_AOT
+        return JsonSerializer.Deserialize(
+            message,
+            JsonRpcSerialization.ReadOptions.GetTypeInfo(typeof(JsonRpc2Message))) as JsonRpc2Message;
+#else
+        return JsonSerializer.Deserialize<JsonRpc2Message>(message, this.deserializerOptions);
+#endif
+    }
+
+    /// <summary>
+    /// Encode a JSON-RPC request.
+    /// </summary>
+    /// <param name="request">Request or notification to encode.</param>
+    /// <returns>Serialized JSON text.</returns>
+    private static string SerializeRequest(JsonRpc2Request request)
+    {
+#if SCRATCHLINK_AOT
+        return JsonSerializer.Serialize(
+            request,
+            JsonRpcSerialization.WriteOptions.GetTypeInfo(typeof(JsonRpc2Request)));
+#else
+        return JsonSerializer.Serialize(request);
+#endif
+    }
+
+    /// <summary>
+    /// Encode a JSON-RPC response.
+    /// </summary>
+    /// <param name="message">Response message to encode.</param>
+    /// <returns>Serialized JSON text.</returns>
+    private static string SerializeMessage(JsonRpc2Message message)
+    {
+#if SCRATCHLINK_AOT
+        return JsonSerializer.Serialize(
+            message,
+            JsonRpcSerialization.WriteOptions.GetTypeInfo(typeof(JsonRpc2Message)));
+#else
+        return JsonSerializer.Serialize(message);
+#endif
+    }
+
+    /// <summary>
+    /// Decode and dispatch one incoming message.
+    /// Fleck calls the message callback as async void, so every failure must be contained here:
+    /// a malformed or unsupported message becomes a JSON-RPC parse error instead of a process abort.
+    /// </summary>
+    /// <param name="deserialize">Deserializer bound to the current text or binary message.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private async Task HandleIncomingMessage(Func<JsonRpc2Message?> deserialize)
+    {
+        JsonRpc2Message? message;
+        try
+        {
+            message = deserialize();
+        }
+        catch (Exception e)
+        {
+            Trace.WriteLine($"Failed to parse JSON-RPC message: {e}");
+            await this.SendResponse(null, null, JsonRpc2Error.ParseError(e.Message));
+            return;
+        }
+
+        if (message == null)
+        {
+            await this.SendResponse(null, null, JsonRpc2Error.ParseError("empty JSON-RPC message"));
+            return;
+        }
+
+        try
+        {
+            await this.HandleMessage(message);
+        }
+        catch (Exception e)
+        {
+            // HandleRequest 已兜底业务异常；这里只防最后一道意外，绝不能冒泡到 async void
+            Trace.WriteLine($"Failed to handle JSON-RPC message: {e}");
+        }
     }
 
     /// <summary>
@@ -299,7 +401,7 @@ public class Session : IDisposable
             Params = parameters,
         };
 
-        var message = JsonSerializer.Serialize(request);
+        var message = SerializeRequest(request);
 
         await this.SocketSend(message);
     }
@@ -343,7 +445,7 @@ public class Session : IDisposable
             Id = requestId,
         };
 
-        var message = JsonSerializer.Serialize(request);
+        var message = SerializeRequest(request);
 
         using var pendingRequest = new PendingRequestRecord(timeout);
 
@@ -473,7 +575,7 @@ public class Session : IDisposable
 
         try
         {
-            var responseString = JsonSerializer.Serialize(response);
+            var responseString = SerializeMessage(response);
 
             try
             {

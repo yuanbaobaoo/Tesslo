@@ -10,6 +10,8 @@
     <AssemblyName>ScratchLinkOhos</AssemblyName>
     <RootNamespace>ScratchLink.Ohos</RootNamespace>
     <StripSymbols>false</StripSymbols>
+    <!-- AOT 专用 JSON 路径；win/mac 继续使用上游反射实现 -->
+    <DefineConstants>$(DefineConstants);SCRATCHLINK_AOT</DefineConstants>
   </PropertyGroup>
 
   <!--

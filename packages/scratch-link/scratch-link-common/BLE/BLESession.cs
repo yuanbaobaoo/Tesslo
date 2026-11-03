@@ -320,7 +320,7 @@ internal abstract class BLESession<TDiscoveredPeripheral, TPeripheralAddress, TU
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected Task<object> HandleGetServices(string methodName, JsonElement? args)
     {
-        return Task.FromResult<object>(this.AllowedServices.Select(x => x.ToString()));
+        return Task.FromResult<object>(this.AllowedServices.Select(x => x.ToString()).ToList());
     }
 
     /// <summary>
@@ -558,28 +558,28 @@ internal abstract class BLESession<TDiscoveredPeripheral, TPeripheralAddress, TU
             return maskedPrefix.SequenceEqual(this.DataPrefix);
         }
     }
+}
+
+/// <summary>
+/// JSON-ready class to use when reporting that a peripheral was discovered.
+/// </summary>
+internal sealed class BLEPeripheralDiscovered
+{
+    /// <summary>
+    /// Gets or sets the advertised name of the peripheral.
+    /// </summary>
+    [JsonPropertyName("name")]
+    public string Name { get; set; }
 
     /// <summary>
-    /// JSON-ready class to use when reporting that a peripheral was discovered.
+    /// Gets or sets the ID which can be used for connecting to this peripheral.
     /// </summary>
-    protected class BLEPeripheralDiscovered
-    {
-        /// <summary>
-        /// Gets or sets the advertised name of the peripheral.
-        /// </summary>
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
+    [JsonPropertyName("peripheralId")]
+    public string PeripheralId { get; set; }
 
-        /// <summary>
-        /// Gets or sets the ID which can be used for connecting to this peripheral.
-        /// </summary>
-        [JsonPropertyName("peripheralId")]
-        public string PeripheralId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the relative signal strength of the advertisement.
-        /// </summary>
-        [JsonPropertyName("rssi")]
-        public int RSSI { get; set; }
-    }
+    /// <summary>
+    /// Gets or sets the relative signal strength of the advertisement.
+    /// </summary>
+    [JsonPropertyName("rssi")]
+    public int RSSI { get; set; }
 }
