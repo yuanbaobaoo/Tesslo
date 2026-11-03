@@ -1,5 +1,5 @@
 {
-  "comment": "环境自愈组件清单：版本、下载源与 SHA-256 的单一事实源。scripts/env.mjs 读取。CLT 分卷托管在 GitCode ohos-tools v26.0（国内 CDN），runtime pack 托管在本仓 GitHub Release tools。支持平台：mac-arm64、linux-x64（Intel mac 不支持；windows-x64 资产已备、脚本链路未适配）。linux 分卷哈希取自 GitCode 资产摘要，整包哈希与 CI 锁定值一致。",
+  "comment": "环境自愈组件清单：版本、下载源与 SHA-256 的单一事实源。scripts/env.ts 读取。CLT 分卷托管在 GitCode ohos-tools v26.0（国内 CDN），runtime pack 托管在本仓 GitHub Release tools。支持平台：mac-arm64、linux-x64（Intel mac 不支持；windows-x64 资产已备、脚本链路未适配）。linux 分卷哈希取自 GitCode 资产摘要，整包哈希与 CI 锁定值一致。",
   "clt": {
     "baseUrl": "https://gitcode.com/yuanbaobaoo/ohos-tools/releases/download/v26.0",
     "linux-x64": {

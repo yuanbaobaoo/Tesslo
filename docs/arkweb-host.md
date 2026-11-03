@@ -17,7 +17,7 @@ Web({src: $rawfile('index.html'), controller: this.controller})
 ```
 
 `index.html`、`main.js`、GUI 静态资源、离线素材都在
-`entry/src/main/resources/rawfile`。其中 Web bundle 由 `scripts/ohos-common.mjs`
+`entry/src/main/resources/rawfile`。其中 Web bundle 由 `scripts/ohos-common.ts`
 在 HAP 构建时写入，`rawfile` 本身不进入 git；离线素材的源文件在
 `apps/tesslo/assets/fetched`（已入库），构建时以硬链接铺进 rawfile。
 

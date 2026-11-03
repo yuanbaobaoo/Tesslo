@@ -5,12 +5,13 @@ import {
   abilityName,
   buildHap,
   bundleName,
+  errorMessage,
   findHap,
   listDevices,
   repoRoot,
   resolveToolchain,
   run
-} from './ohos-common.mjs';
+} from './ohos-common.ts';
 
 // 命令行参数：--device <serial> 指定单台设备；--ble-sim 以模拟外设启动 BLE
 const argv = process.argv.slice(2);
@@ -28,12 +29,14 @@ fs.mkdirSync(evidenceDir, {recursive: true});
 
 try {
   const toolchain = resolveToolchain();
-  let hap;
+  // 本次部署的 HAP 路径：--skip-build 复用已有签名包，否则现场构建
+  let hap = '';
   if (args.has('--skip-build')) {
-    hap = findHap({signed: true});
-    if (!hap) throw new Error('no signed HAP found; run without --skip-build first');
+    const found = findHap({signed: true});
+    if (!found) throw new Error('no signed HAP found; run without --skip-build first');
+    hap = found;
   } else {
-    ({hap} = buildHap({build: args.has('--build'), signed: true}));
+    hap = buildHap({build: args.has('--build'), signed: true}).hap;
   }
 
   const devices = listDevices(toolchain.hdc).filter(serial =>
@@ -133,6 +136,6 @@ try {
     }
   }
 } catch (error) {
-  console.error(`[dev:ohos] ${error.message}`);
+  console.error(`[dev:ohos] ${errorMessage(error)}`);
   process.exit(1);
 }

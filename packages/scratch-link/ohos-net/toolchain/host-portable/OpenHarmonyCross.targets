@@ -59,6 +59,32 @@
            Text="OpenHarmony SDK resolver did not produce '$(OpenHarmonySdkResolverPropsPath)'." />
   </Target>
 
+  <!--
+    Cache ownership check: the resolver props pin absolute SDK paths, so a cache
+    produced against a different OpenHarmonySdkRoot (e.g. the SDK was switched
+    via OHOS_SDK_ROOT / -p:OpenHarmonySdkRoot) must not be trusted. Drop the
+    cache and clear the imported properties so ReadOpenHarmonySdkProps re-enters
+    (its condition sees the cleared property) and ResolveOpenHarmonySdk re-runs
+    (its !Exists() condition sees the deleted file). NOTE: this target must be
+    a direct dependency of ValidateOpenHarmonySdk listed BEFORE
+    ReadOpenHarmonySdkProps — MSBuild skips a condition-false target together
+    with its whole DependsOnTargets subtree, so gating it under
+    ReadOpenHarmonySdkProps would never fire when a cache exists.
+  -->
+  <Target Name="InvalidateStaleSdkCache"
+          DependsOnTargets="ValidateOpenHarmonyRequestedProperties"
+          Condition="'$(OpenHarmonyNativeRoot)' != '' and '$(OpenHarmonySdkRoot)' != '' and '$(OpenHarmonySdkFolder)' != ''">
+    <PropertyGroup>
+      <_ExpectedNativeRoot>$([MSBuild]::NormalizePath('$(OpenHarmonySdkRoot)', '$(OpenHarmonySdkFolder)', 'native'))</_ExpectedNativeRoot>
+    </PropertyGroup>
+    <Delete Files="$(OpenHarmonySdkResolverPropsPath)"
+            Condition="'$(OpenHarmonyNativeRoot)' != '$(_ExpectedNativeRoot)'" />
+    <PropertyGroup Condition="'$(OpenHarmonyNativeRoot)' != '$(_ExpectedNativeRoot)'">
+      <OpenHarmonyNativeRoot />
+      <OpenHarmonySdkFolder />
+    </PropertyGroup>
+  </Target>
+
   <Target Name="ReadOpenHarmonySdkProps"
           DependsOnTargets="ResolveOpenHarmonySdk"
           Condition="'$(OpenHarmonyNativeRoot)' == ''">
@@ -77,7 +103,7 @@
   </Target>
 
   <Target Name="ValidateOpenHarmonySdk"
-          DependsOnTargets="ReadOpenHarmonySdkProps"
+          DependsOnTargets="InvalidateStaleSdkCache;ReadOpenHarmonySdkProps"
           BeforeTargets="PrepareForBuild;SetupOSSpecificProps">
     <PropertyGroup>
       <OpenHarmonyBinDir>$([MSBuild]::NormalizePath('$(OpenHarmonyNativeRoot)', 'llvm', 'bin'))</OpenHarmonyBinDir>

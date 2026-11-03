@@ -17,22 +17,124 @@ import readline from 'node:readline';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
+// toolchain.lock.json 里单个 CLT 平台资产条目（sha256 为 null 表示 Release 资产未上传）
+interface CltAssetEntry {
+  version: string;
+  parts: string[];
+  partSha256?: string[];
+  sha256: string | null;
+  sizeHint: string;
+}
+
+// .NET SDK 资产条目（官方 CDN 不发哈希，sha256 可为 null，靠 dotnet --version 兜底）
+interface DotnetEntry {
+  version: string;
+  sizeHint: string;
+  sha256: string | null;
+  urls: Partial<Record<DotnetUrlKey, string>>;
+}
+
+// ohos-net runtime pack 资产条目
+interface RuntimePackEntry {
+  baseUrl: string;
+  file: string;
+  sha256: string;
+  format: string;
+  sizeHint: string;
+  targetDir: string;
+  anchor: string;
+}
+
+// scripts/toolchain.lock.json 的结构契约（环境自愈组件清单的单一事实源）
+interface ToolchainLock {
+  clt: {
+    baseUrl: string;
+    'mac-arm64': CltAssetEntry;
+    'linux-x64': CltAssetEntry;
+    'mac-x64'?: CltAssetEntry;
+    'windows-x64'?: CltAssetEntry;
+  };
+  dotnet: DotnetEntry;
+  runtimePack: RuntimePackEntry;
+}
+
+// CLT 资产的平台键（platformKey 的返回值；null 表示该平台不支持自动安装）
+type CltAssetKey = 'mac-arm64' | 'mac-x64' | 'linux-x64' | 'windows-x64';
+
+// .NET 官方 CDN 的平台键（darwin/linux 命名，与 CLT 资产的 mac 命名不同）
+type DotnetUrlKey = 'darwin-arm64' | 'darwin-x64' | 'linux-x64';
+
+// 组件解析状态：explicit=显式声明 managed=.toolchain 自愈 detected=本机探测
+// derived=CLT/PATH 推导 missing=未找到 explicit-invalid=声明路径无效
+type ResolveState = 'explicit' | 'explicit-invalid' | 'managed' | 'detected' | 'derived' | 'missing';
+
+// 带路径组件（clt/ohos-sdk/dotnet）的解析结果
+interface PathState {
+  state: ResolveState;
+  root: string | null;
+  detail: string;
+}
+
+// runtime pack 的解析结果（无 root 概念；explicitArchive 为本地压缩包声明）
+interface RuntimePackState {
+  state: ResolveState;
+  detail: string;
+  explicitArchive?: string;
+}
+
+// JDK 前置依赖的解析结果
+interface JdkState {
+  ok: boolean;
+  javaHome: string | null;
+  detail: string;
+}
+
+// devecocli（workspace devDependency）的解析结果
+interface DevecocliState {
+  ok: boolean;
+  detail: string;
+}
+
+// --for <scope> 的组件需求声明
+interface ScopeConfig {
+  auto: string[];
+  needSdkOnly: boolean;
+  prereqs?: string[];
+}
+
+// collectStates 的汇总结果
+interface CollectedStates {
+  rows: string[][];
+  missing: string[];
+  invalid: Array<{name: string; detail: string}>;
+  jdk: JdkState;
+  devecocli: DevecocliState;
+  states: {clt: PathState; sdk: PathState; dotnet: PathState; pack: RuntimePackState};
+}
+
+// 仓库根与 .toolchain 约定路径
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const toolchainDir = path.join(repoRoot, '.toolchain');
 const cacheDir = path.join(toolchainDir, 'cache');
 const markerDir = path.join(toolchainDir, 'markers');
 const lockFile = path.join(repoRoot, 'scripts/toolchain.lock.json');
-const lock = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+// 边界断言：lock 是仓库内维护的 JSON，结构由 ToolchainLock 接口约定（§6 跨边界）
+const lock = JSON.parse(fs.readFileSync(lockFile, 'utf8')) as ToolchainLock;
 
 // 自动安装的组件注册表；顺序即下载顺序（小文件优先，体验好）
 const AUTO_COMPONENTS = ['runtime-pack', 'dotnet', 'clt'];
 
-// 解析 .env 文件为 Map，不污染 process.env——显式声明与否必须与本机探测可区分
-function parseEnvFile(name) {
+/**
+ * 解析 .env 文件为 Map，不污染 process.env——显式声明与否必须与本机探测可区分。
+ *
+ * @param name - 仓库根下的文件名（.env / .env.toolchain）
+ * @returns 键值 Map；文件不存在返回空 Map
+ */
+function parseEnvFile(name: string): Map<string, string> {
   const file = path.join(repoRoot, name);
-  const map = new Map();
+  const map = new Map<string, string>();
   if (!fs.existsSync(file)) return map;
-  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+  for (const line of fs.readFileSync(file, 'utf-8').split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
     const eq = trimmed.indexOf('=');
@@ -56,23 +158,31 @@ const userEnv = parseEnvFile('.env');
 /**
  * 读取组件的显式配置值：真实环境变量优先于 .env（CI 注入的变量视同显式）。
  *
- * @param {string} key - 环境变量名
- * @returns {string | undefined} 显式值；未声明返回 undefined
+ * @param key - 环境变量名
+ * @returns 显式值；未声明返回 undefined
  */
-function explicitValue(key) {
+function explicitValue(key: string): string | undefined {
   if (process.env[key] !== undefined) return process.env[key];
   return userEnv.get(key);
 }
 
-// 平台标识映射到 lock 的 clt 条目；null 表示该平台不支持自动安装
-function platformKey() {
+/**
+ * 平台标识映射到 lock 的 clt 条目。
+ *
+ * @returns 平台键；null 表示该平台不支持自动安装
+ */
+function platformKey(): CltAssetKey | null {
   if (process.platform === 'darwin') return process.arch === 'arm64' ? 'mac-arm64' : 'mac-x64';
   if (process.platform === 'linux' && process.arch === 'x64') return 'linux-x64';
   return null;
 }
 
-// .NET 官方 CDN 用 darwin/linux 命名，与 CLT 资产的 mac 命名不同，单独映射
-function dotnetUrlKey() {
+/**
+ * .NET 官方 CDN 用 darwin/linux 命名，与 CLT 资产的 mac 命名不同，单独映射。
+ *
+ * @returns CDN 平台键；null 表示不支持
+ */
+function dotnetUrlKey(): DotnetUrlKey | null {
   if (process.platform === 'darwin') return process.arch === 'arm64' ? 'darwin-arm64' : 'darwin-x64';
   if (process.platform === 'linux' && process.arch === 'x64') return 'linux-x64';
   return null;
@@ -81,15 +191,15 @@ function dotnetUrlKey() {
 /**
  * 在目录树浅层定位锚点文件（bin/hvigorw 这类），兼容 zip 内多套一层目录的情况。
  *
- * @param {string} from - 起始目录
- * @param {string} anchor - 相对锚点路径，如 'bin/hvigorw'
- * @param {number} maxDepth - 最大深度
- * @returns {string | null} 锚点所在目录；未找到返回 null
+ * @param from - 起始目录
+ * @param anchor - 相对锚点路径，如 'bin/hvigorw'
+ * @param maxDepth - 最大深度
+ * @returns 锚点所在目录；未找到返回 null
  */
-function locateAnchor(from, anchor, maxDepth = 3) {
+function locateAnchor(from: string, anchor: string, maxDepth: number = 3): string | null {
   if (fs.existsSync(path.join(from, anchor))) return from;
   if (maxDepth <= 0) return null;
-  let entries = [];
+  let entries: Array<fs.Dirent> = [];
   try {
     entries = fs.readdirSync(from, {withFileTypes: true});
   } catch {
@@ -103,40 +213,54 @@ function locateAnchor(from, anchor, maxDepth = 3) {
   return null;
 }
 
-// 与 ohos-common.mjs 的探测链保持一致；.toolchain/ 是自愈安装的约定落点
-function cltCandidates() {
-  return [
-    explicitValue('OHOS_COMMAND_LINE_TOOLS_ROOT'),
-    path.join(toolchainDir, 'command-line-tools'),
-    process.env.HOME && path.join(process.env.HOME, 'command-line-tools'),
-    ...sharedLocalCandidates()
-  ].filter(Boolean);
+/**
+ * 查 PATH 上的命令位置；探测失败返回空串。
+ *
+ * @param name - 命令名
+ * @returns 命令绝对路径；不在 PATH 上返回空串
+ */
+function commandOnPath(name: string): string {
+  const result = spawnSync('sh', ['-c', `command -v ${name}`], {encoding: 'utf-8'});
+  return result.status === 0 ? result.stdout.trim() : '';
 }
 
-// /Users/Shared/local/ohos 下的历史多版本安装（macOS 团队机惯例）
-function sharedLocalCandidates() {
-  const sharedRoot = '/Users/Shared/local/ohos';
-  if (!fs.existsSync(sharedRoot)) return [];
-  return fs
-    .readdirSync(sharedRoot)
-    .filter(name => name.startsWith('command-line-tools'))
-    .sort()
-    .reverse()
-    .map(name => path.join(sharedRoot, name));
+/**
+ * PATH 反推 CLT 根：hvigorw 位于 <clt>/bin，hdc 位于
+ * <clt>/sdk/default/openharmony/toolchains（hdc 链也覆盖只装了 SDK、没装 CLT 的布局）。
+ *
+ * @returns 候选根目录列表
+ */
+function pathDerivedCltCandidates(): string[] {
+  const candidates = [];
+  const hvigorw = commandOnPath('hvigorw');
+  if (hvigorw) candidates.push(path.resolve(path.dirname(hvigorw), '..'));
+  const hdc = commandOnPath('hdc');
+  if (hdc) candidates.push(path.resolve(path.dirname(hdc), '../../../..'));
+  return candidates;
+}
+
+// 与 ohos-common.ts 的探测链保持一致，不做机器路径猜测：
+// DEVECO_CLI_CLT_PATH 显式声明（devecocli 标准变量）→ PATH 反推 → .toolchain/ 自愈安装
+function cltCandidates(): string[] {
+  return [
+    explicitValue('DEVECO_CLI_CLT_PATH'),
+    ...pathDerivedCltCandidates(),
+    path.join(toolchainDir, 'command-line-tools')
+  ].filter((candidate): candidate is string => Boolean(candidate));
 }
 
 /**
  * 解析 CLT 状态。sdkRoot 单独判定：link 构建只需要 Native SDK，hap/app 才需要 hvigorw。
  *
- * @returns {{state: string, root: string | null, detail: string}}
+ * @returns 解析状态、根路径与说明
  */
-function resolveClt() {
-  const explicit = explicitValue('OHOS_COMMAND_LINE_TOOLS_ROOT');
+function resolveClt(): PathState {
+  const explicit = explicitValue('DEVECO_CLI_CLT_PATH');
   // 显式声明只校验声明路径本身——即使本机其他位置有可用安装，声明无效也必须报错，
   // 否则配置错误会被探测链静默掩盖
   if (explicit) {
     if (!fs.existsSync(path.join(explicit, 'bin/hvigorw'))) {
-      return {state: 'explicit-invalid', root: null, detail: `OHOS_COMMAND_LINE_TOOLS_ROOT=${explicit} 下没有 bin/hvigorw`};
+      return {state: 'explicit-invalid', root: null, detail: `DEVECO_CLI_CLT_PATH=${explicit} 下没有 bin/hvigorw`};
     }
     return {state: 'explicit', root: explicit, detail: '显式声明'};
   }
@@ -154,22 +278,22 @@ function resolveClt() {
   return {state: 'missing', root: null, detail: '未找到 command-line-tools'};
 }
 
-/**
- * 解析 OHOS Native SDK 根（openharmony 交叉工具链）。优先显式 OHOS_SDK_ROOT，
- * 否则从 CLT 根推导（sdk/default）。
- *
- * @param {string | null} cltRoot
- * @returns {{state: string, root: string | null, detail: string}}
- */
 // Native SDK 有效性锚点：oh-uni-package.json（新旧 SDK 布局两种位置）
-function hasSdkAnchor(root) {
+function hasSdkAnchor(root: string): boolean {
   return (
     fs.existsSync(path.join(root, 'openharmony/native/oh-uni-package.json')) ||
     fs.existsSync(path.join(root, 'native/oh-uni-package.json'))
   );
 }
 
-function resolveSdk(cltRoot) {
+/**
+ * 解析 OHOS Native SDK 根（openharmony 交叉工具链）。优先显式 OHOS_SDK_ROOT，
+ * 否则由 CLT 根或 PATH 上的 SDK 工具（hvigorw/hdc）反推（sdk/default）。
+ *
+ * @param cltRoot - CLT 根（可为 null，仅影响推导候选）
+ * @returns 解析状态、根路径与说明
+ */
+function resolveSdk(cltRoot: string | null): PathState {
   const explicit = explicitValue('OHOS_SDK_ROOT');
   // 与 CLT 同理：显式声明只校验声明路径本身
   if (explicit) {
@@ -178,9 +302,15 @@ function resolveSdk(cltRoot) {
     }
     return {state: 'explicit', root: explicit, detail: '显式声明'};
   }
-  const derived = cltRoot && path.join(cltRoot, 'sdk/default');
-  if (derived && hasSdkAnchor(derived)) {
-    return {state: 'derived', root: derived, detail: '由 CLT 推导'};
+  // 推导候选：CLT 根优先；PATH 上只有 hdc（只装 SDK、没装 CLT）时也能反推出 sdk/default
+  const derivedCandidates = [];
+  if (cltRoot) derivedCandidates.push(path.join(cltRoot, 'sdk/default'));
+  for (const candidate of pathDerivedCltCandidates()) {
+    derivedCandidates.push(path.join(candidate, 'sdk/default'));
+  }
+  const derived = derivedCandidates.find(root => hasSdkAnchor(root));
+  if (derived) {
+    return {state: 'derived', root: derived, detail: '由 CLT 根 / PATH 反推'};
   }
   return {state: 'missing', root: null, detail: '未找到 Native SDK'};
 }
@@ -188,9 +318,9 @@ function resolveSdk(cltRoot) {
 /**
  * 解析 .NET SDK 根（含 dotnet 可执行文件的目录）。
  *
- * @returns {{state: string, root: string | null, detail: string}}
+ * @returns 解析状态、根路径与说明
  */
-function resolveDotnet() {
+function resolveDotnet(): PathState {
   const explicit = explicitValue('DOTNET_ROOT');
   if (explicit) {
     if (!fs.existsSync(path.join(explicit, 'dotnet'))) {
@@ -203,7 +333,7 @@ function resolveDotnet() {
     path.join(toolchainDir, 'dotnet'),
     process.env.HOME && path.join(process.env.HOME, '.dotnet'),
     onPath && path.dirname(onPath)
-  ].filter(Boolean);
+  ].filter((candidate): candidate is string => Boolean(candidate));
   const found = candidates.find(candidate => fs.existsSync(path.join(candidate, 'dotnet')));
   if (found) {
     const managed = found.startsWith(toolchainDir);
@@ -214,16 +344,23 @@ function resolveDotnet() {
 
 // runtime pack 的约定安装路径由 csproj 的 Import 决定，不能改
 const runtimePackTarget = path.join(repoRoot, lock.runtimePack.targetDir);
-const runtimePackAnchor = () =>
-  fs.existsSync(path.join(runtimePackTarget, lock.runtimePack.anchor));
+
+/**
+ * runtime pack 锚点检查：约定路径下是否已有可用的 ilcompiler 目录。
+ *
+ * @returns 锚点存在返回 true
+ */
+function runtimePackAnchor(): boolean {
+  return fs.existsSync(path.join(runtimePackTarget, lock.runtimePack.anchor));
+}
 
 /**
  * 解析 ohos-net runtime pack。支持 .env 显式声明 OHOS_NET_RUNTIME_PACK
  * 指向解压目录或本地压缩包；声明后绝不下载。
  *
- * @returns {{state: string, detail: string, explicitArchive?: string}}
+ * @returns 解析状态与说明；声明本地压缩包时带 explicitArchive
  */
-function resolveRuntimePack() {
+function resolveRuntimePack(): RuntimePackState {
   const explicit = explicitValue('OHOS_NET_RUNTIME_PACK');
   if (explicit) {
     if (fs.existsSync(explicit) && fs.statSync(explicit).isFile()) {
@@ -248,14 +385,14 @@ function resolveRuntimePack() {
 /**
  * JDK 前置依赖：JAVA_HOME → sdkman → PATH。绝不自动下载。
  *
- * @returns {{ok: boolean, javaHome: string | null, detail: string}}
+ * @returns 是否可用、JAVA_HOME 与说明
  */
-function resolveJdk() {
+function resolveJdk(): JdkState {
   const candidates = [
     explicitValue('JAVA_HOME'),
     process.env.HOME && path.join(process.env.HOME, '.sdkman/candidates/java/current')
-  ].filter(Boolean);
-  let javaHome = candidates.find(candidate => fs.existsSync(path.join(candidate, 'bin/java'))) || null;
+  ].filter((candidate): candidate is string => Boolean(candidate));
+  let javaHome = candidates.find(candidate => fs.existsSync(path.join(candidate, 'bin/java'))) ?? null;
   let javaBin = javaHome && path.join(javaHome, 'bin/java');
   if (!javaBin) {
     const onPath = capture('sh', ['-c', 'command -v java']);
@@ -271,11 +408,16 @@ function resolveJdk() {
       detail: '未找到 java；hvigor 打包/签名需要 JDK（建议 Temurin 17+）：https://adoptium.net/'
     };
   }
-  return {ok: true, javaHome, detail: javaHome};
+  // 不变量：javaBin 存在时 javaHome 必已赋值（候选目录或 PATH 反推），兜底展示 bin 路径
+  return {ok: true, javaHome, detail: javaHome ?? javaBin};
 }
 
-// devecocli 是 workspace devDependency，pnpm install 后必然存在
-function resolveDevecocli() {
+/**
+ * devecocli 是 workspace devDependency，pnpm install 后必然存在。
+ *
+ * @returns 是否可用与说明
+ */
+function resolveDevecocli(): DevecocliState {
   const bin = path.join(repoRoot, 'node_modules/.bin/devecocli');
   return fs.existsSync(bin) ? {ok: true, detail: bin} : {ok: false, detail: '运行 pnpm install 安装 devDependency'};
 }
@@ -283,11 +425,11 @@ function resolveDevecocli() {
 /**
  * 同步执行命令并捕获 stdout；失败返回空串（探测用）。
  *
- * @param {string} command
- * @param {string[]} args
- * @returns {string}
+ * @param command - 可执行文件
+ * @param args - 参数列表
+ * @returns 去除首尾空白后的 stdout；非零退出码返回空串
  */
-function capture(command, args) {
+function capture(command: string, args: string[]): string {
   const result = spawnSync(command, args, {encoding: 'utf8'});
   return result.status === 0 ? result.stdout.trim() : '';
 }
@@ -299,10 +441,10 @@ function capture(command, args) {
 /**
  * 用系统 curl 下载（断点续传、重试）；curl 不存在时给出安装指引。
  *
- * @param {string} url
- * @param {string} dest
+ * @param url - 下载地址
+ * @param dest - 目标文件
  */
-function download(url, dest) {
+function download(url: string, dest: string): void {
   if (!capture('sh', ['-c', 'command -v curl'])) {
     throw new Error('curl not found; install curl first');
   }
@@ -317,10 +459,10 @@ function download(url, dest) {
 /**
  * 计算文件 SHA-256。
  *
- * @param {string} file
- * @returns {Promise<string>} hex 摘要
+ * @param file - 目标文件
+ * @returns hex 摘要
  */
-function sha256File(file) {
+function sha256File(file: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash('sha256');
     const stream = fs.createReadStream(file);
@@ -333,10 +475,10 @@ function sha256File(file) {
 /**
  * 校验文件哈希；expected 为 null 时跳过（dotnet 官方 CDN 不发哈希，靠功能校验兜底）。
  *
- * @param {string} file
- * @param {string | null} expected
+ * @param file - 目标文件
+ * @param expected - 期望的 hex 摘要；null 跳过校验
  */
-async function verifySha256(file, expected) {
+async function verifySha256(file: string, expected: string | null): Promise<void> {
   if (!expected) return;
   const actual = await sha256File(file);
   if (actual !== expected) {
@@ -347,10 +489,10 @@ async function verifySha256(file, expected) {
 /**
  * 解压 zip 到目标目录；优先 unzip，darwin 无 unzip 时退回系统 ditto。
  *
- * @param {string} zip
- * @param {string} destDir
+ * @param zip - zip 文件
+ * @param destDir - 目标目录
  */
-function extractZip(zip, destDir) {
+function extractZip(zip: string, destDir: string): void {
   fs.mkdirSync(destDir, {recursive: true});
   if (capture('sh', ['-c', 'command -v unzip'])) {
     const result = spawnSync('unzip', ['-q', zip, '-d', destDir], {stdio: 'inherit'});
@@ -368,11 +510,11 @@ function extractZip(zip, destDir) {
 /**
  * 解压 tar 包；.zst 先探测 tar 的 zstd 支持，再退回 zstd 管道。
  *
- * @param {string} file
- * @param {string} destDir
- * @param {boolean} zst
+ * @param file - tar 文件
+ * @param destDir - 目标目录
+ * @param zst - 是否为 zstd 压缩
  */
-function extractTar(file, destDir, zst) {
+function extractTar(file: string, destDir: string, zst: boolean): void {
   fs.mkdirSync(destDir, {recursive: true});
   if (!zst) {
     const result = spawnSync('tar', ['-xf', file, '-C', destDir], {stdio: 'inherit'});
@@ -398,9 +540,9 @@ function extractTar(file, destDir, zst) {
  * 简易互斥锁：两个 pnpm 终端同时触发 postinstall 时不并发写 .toolchain。
  * 锁超过 30 分钟视为残留（下载中断），直接接管。
  *
- * @param {() => Promise<void>} fn
+ * @param fn - 持锁执行的安装动作
  */
-async function withLock(fn) {
+async function withLock(fn: () => Promise<void>): Promise<void> {
   fs.mkdirSync(toolchainDir, {recursive: true});
   const lockPath = path.join(toolchainDir, '.lock');
   try {
@@ -430,12 +572,12 @@ async function withLock(fn) {
 /**
  * 交互确认：y/Y/yes 确认，n/N/no/回车/EOF 拒绝；非 TTY 与 TESSLO_BOOTSTRAP=off 默认拒绝。
  *
- * @param {string} question
- * @param {boolean} yesFlag
- * @param {boolean} noFlag
- * @returns {Promise<boolean>}
+ * @param question - 提示文案
+ * @param yesFlag - 命令行 --yes
+ * @param noFlag - 命令行 --no
+ * @returns 是否确认
  */
-function confirm(question, yesFlag, noFlag) {
+function confirm(question: string, yesFlag: boolean, noFlag: boolean): Promise<boolean> {
   if (yesFlag || process.env.TESSLO_BOOTSTRAP === 'on') return Promise.resolve(true);
   if (noFlag || process.env.TESSLO_BOOTSTRAP === 'off') return Promise.resolve(false);
   if (!process.stdin.isTTY || !process.stdout.isTTY) return Promise.resolve(false);
@@ -448,18 +590,25 @@ function confirm(question, yesFlag, noFlag) {
   });
 }
 
-// 组件基址独立配置（CLT 走 GitCode 国内 CDN，runtime pack 走 GitHub Release）；
-// TESSLO_TOOLS_BASE_URL 可整体覆盖（自建镜像场景）
-const componentBaseUrl = entry => process.env.TESSLO_TOOLS_BASE_URL || entry.baseUrl;
+/**
+ * 组件基址独立配置（CLT 走 GitCode 国内 CDN，runtime pack 走 GitHub Release）；
+ * TESSLO_TOOLS_BASE_URL 可整体覆盖（自建镜像场景）。
+ *
+ * @param entry - 带 baseUrl 的资产条目
+ * @returns 实际使用的下载基址
+ */
+function componentBaseUrl(entry: {baseUrl: string}): string {
+  return process.env.TESSLO_TOOLS_BASE_URL || entry.baseUrl;
+}
 
 /**
  * 安装 CLT：分卷下载 → 逐卷校验 → cat 还原 → 整包校验 → 解压 → 锚点定位。
  *
- * @param {boolean} force
+ * @param force - 是否强制重装
  */
-async function installClt(force) {
+async function installClt(force: boolean): Promise<void> {
   const key = platformKey();
-  const entry = key && lock.clt[key];
+  const entry = key ? lock.clt[key] : undefined;
   if (!entry) {
     throw new Error(
       `当前平台（${process.platform}/${process.arch}）不支持 CLT 自动安装（支持 mac-arm64 / linux-x64）；请参考 docs/build.md 手动安装`
@@ -477,7 +626,7 @@ async function installClt(force) {
     console.log(`[env] 下载 CLT 整包：${process.env.OHOS_CLT_URL}`);
     download(process.env.OHOS_CLT_URL, zipPath);
   } else {
-    const parts = [];
+    const parts: string[] = [];
     for (let i = 0; i < entry.parts.length; i += 1) {
       const partPath = path.join(cacheDir, entry.parts[i]);
       console.log(`[env] 下载 ${entry.parts[i]}（${entry.sizeHint} 共 ${entry.parts.length} 卷）`);
@@ -491,14 +640,14 @@ async function installClt(force) {
     // 分卷是字节级切分：cat 即还原
     const out = fs.createWriteStream(zipPath);
     for (const part of parts) {
-      await new Promise((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         fs.createReadStream(part)
           .on('data', chunk => out.write(chunk))
           .on('end', resolve)
           .on('error', reject);
       });
     }
-    await new Promise(resolve => out.end(resolve));
+    await new Promise<void>(resolve => out.end(resolve));
     for (const part of parts) fs.rmSync(part, {force: true});
   }
   await verifySha256(zipPath, entry.sha256);
@@ -524,11 +673,11 @@ async function installClt(force) {
 /**
  * 安装 .NET SDK 到 .toolchain/dotnet；安装后跑 dotnet --version 做功能校验。
  *
- * @param {boolean} force
+ * @param force - 是否强制重装
  */
-async function installDotnet(force) {
+async function installDotnet(force: boolean): Promise<void> {
   const key = dotnetUrlKey();
-  const url = key && lock.dotnet.urls[key];
+  const url = key ? lock.dotnet.urls[key] : undefined;
   if (!url) {
     throw new Error(`当前平台（${process.platform}/${process.arch}）没有可自动安装的 .NET 资产；请参考 docs/build.md 手动安装`);
   }
@@ -554,10 +703,10 @@ async function installDotnet(force) {
 /**
  * 安装 runtime pack 到约定路径；支持本地压缩包来源（.env 显式声明时不联网）。
  *
- * @param {boolean} force
- * @param {string | undefined} localArchive
+ * @param force - 是否强制重装
+ * @param localArchive - .env 声明的本地压缩包；未声明时联网下载
  */
-async function installRuntimePack(force, localArchive) {
+async function installRuntimePack(force: boolean, localArchive: string | undefined): Promise<void> {
   fs.mkdirSync(cacheDir, {recursive: true});
   const archive = localArchive || path.join(cacheDir, lock.runtimePack.file);
   if (!localArchive) {
@@ -581,10 +730,10 @@ async function installRuntimePack(force, localArchive) {
 /**
  * 写安装标记：跳过重复安装，env:status 显示来源。
  *
- * @param {string} component
- * @param {object} meta
+ * @param component - 组件名
+ * @param meta - 版本/哈希/强制标记等附加信息
  */
-function writeMarker(component, meta) {
+function writeMarker(component: string, meta: Record<string, unknown>): void {
   fs.mkdirSync(markerDir, {recursive: true});
   fs.writeFileSync(
     path.join(markerDir, `${component}.json`),
@@ -596,14 +745,14 @@ function writeMarker(component, meta) {
  * 把自愈安装的路径写进 .env.toolchain（优先级低于 .env 与真实环境变量）。
  * 只写 managed 组件——探测到的本机安装不固化，避免路径过期后误导。
  */
-function writeEnvToolchain() {
+function writeEnvToolchain(): void {
   const lines = [
-    '# 由 scripts/env.mjs 自动生成，勿手改；用户级配置请写 .env（优先级更高）。',
+    '# 由 scripts/env.ts 自动生成，勿手改；用户级配置请写 .env（优先级更高）。',
     '# 加载顺序：真实环境变量 > .env > .env.toolchain。'
   ];
   const clt = path.join(toolchainDir, 'command-line-tools');
   if (fs.existsSync(path.join(clt, 'bin/hvigorw'))) {
-    lines.push(`OHOS_COMMAND_LINE_TOOLS_ROOT=${clt}`);
+    lines.push(`DEVECO_CLI_CLT_PATH=${clt}`);
     lines.push(`OHOS_SDK_ROOT=${path.join(clt, 'sdk/default')}`);
   }
   const dotnet = path.join(toolchainDir, 'dotnet');
@@ -618,7 +767,7 @@ function writeEnvToolchain() {
 // ---------------------------------------------------------------------------
 
 // 各 scope 需要的组件：link 只需要 SDK 与 C# 工具链；hap/app 需要 hvigorw；签名再加 JDK/devecocli
-const SCOPES = {
+const SCOPES: Record<string, ScopeConfig> = {
   link: {auto: ['runtime-pack', 'dotnet', 'clt'], needSdkOnly: true},
   hap: {auto: ['clt'], needSdkOnly: false},
   app: {auto: ['clt'], needSdkOnly: false},
@@ -628,9 +777,9 @@ const SCOPES = {
 /**
  * 汇总所有组件状态并返回缺失的自动组件列表。
  *
- * @returns {{rows: Array<Array<string>>, missing: string[], invalid: Array<{name: string, detail: string}>}}
+ * @returns 体检表行、缺失/无效组件与各组件解析状态
  */
-function collectStates() {
+function collectStates(): CollectedStates {
   const clt = resolveClt();
   const sdk = resolveSdk(clt.root);
   const dotnet = resolveDotnet();
@@ -645,7 +794,7 @@ function collectStates() {
     ['jdk (前置)', jdk.ok ? 'ok' : 'missing', jdk.detail],
     ['devecocli', devecocli.ok ? 'workspace' : 'missing', devecocli.detail]
   ];
-  const invalid = [];
+  const invalid: Array<{name: string; detail: string}> = [];
   for (const [name, state, detail] of [
     ['clt', clt.state, clt.detail],
     ['ohos-sdk', sdk.state, sdk.detail],
@@ -654,7 +803,7 @@ function collectStates() {
   ]) {
     if (state === 'explicit-invalid') invalid.push({name, detail});
   }
-  const missing = [];
+  const missing: string[] = [];
   if (clt.state === 'missing') missing.push('clt');
   if (pack.state === 'missing') missing.push('runtime-pack');
   if (dotnet.state === 'missing') missing.push('dotnet');
@@ -664,7 +813,7 @@ function collectStates() {
 /**
  * status 子命令：打印体检表。
  */
-function cmdStatus() {
+function cmdStatus(): void {
   const {rows} = collectStates();
   console.log('\nTesslo 环境体检（详细规则见 docs/build.md）\n');
   for (const [name, state, detail] of rows) {
@@ -676,11 +825,11 @@ function cmdStatus() {
 /**
  * ensure 子命令：决策矩阵主流程。
  *
- * @param {string | undefined} scope
- * @param {boolean} yesFlag
- * @param {boolean} noFlag
+ * @param scope - --for 声明的链路（link/hap/app/signed）；postinstall 场景为 undefined
+ * @param yesFlag - 命令行 --yes
+ * @param noFlag - 命令行 --no
  */
-async function cmdEnsure(scope, yesFlag, noFlag) {
+async function cmdEnsure(scope: string | undefined, yesFlag: boolean, noFlag: boolean): Promise<void> {
   const collected = collectStates();
   const {invalid} = collected;
 
@@ -695,7 +844,7 @@ async function cmdEnsure(scope, yesFlag, noFlag) {
   // 签名链路的前置硬依赖：缺失立即失败并给手动指引
   const config = scope ? SCOPES[scope] : null;
   if (config && config.prereqs) {
-    const failures = [];
+    const failures: string[] = [];
     if (!collected.jdk.ok) failures.push(`jdk: ${collected.jdk.detail}`);
     if (!collected.devecocli.ok) failures.push(`devecocli: ${collected.devecocli.detail}`);
     if (failures.length) {
@@ -706,7 +855,7 @@ async function cmdEnsure(scope, yesFlag, noFlag) {
   }
 
   // 计算本 scope 真正缺的东西
-  let toInstall = [];
+  let toInstall: string[] = [];
   if (config) {
     for (const name of config.auto) {
       if (name === 'runtime-pack' && collected.states.pack.state === 'missing') toInstall.push('runtime-pack');
@@ -738,8 +887,8 @@ async function cmdEnsure(scope, yesFlag, noFlag) {
   // Intel mac（mac-x64）与 Windows 明确不支持：不提供 CLT 资产，直接按平台不支持报错
   const key = platformKey();
   const cltEntry = key ? lock.clt[key] : undefined;
-  const unsupported = [];
-  const reasons = new Map();
+  const unsupported: string[] = [];
+  const reasons = new Map<string, string>();
   for (const name of toInstall) {
     let supported = true;
     let reason = '';
@@ -752,7 +901,8 @@ async function cmdEnsure(scope, yesFlag, noFlag) {
         reason = 'Release 资产尚未上传';
       }
     }
-    if (name === 'dotnet' && !(dotnetUrlKey() && lock.dotnet.urls[dotnetUrlKey()])) {
+    const dnKey = dotnetUrlKey();
+    if (name === 'dotnet' && !(dnKey && lock.dotnet.urls[dnKey])) {
       supported = false;
       reason = `当前平台 ${process.platform}/${process.arch} 不支持自动安装`;
     }
@@ -762,7 +912,7 @@ async function cmdEnsure(scope, yesFlag, noFlag) {
     }
   }
   if (unsupported.length) {
-    const message = unsupported.map(name => `${name}（${reasons.get(name)}）`).join('、');
+    const message = unsupported.map(name => `${name}（${reasons.get(name) ?? ''}）`).join('、');
     if (scope) {
       console.error(`[env] ${message}；请参考 docs/build.md 手动安装`);
       process.exit(1);
@@ -773,21 +923,21 @@ async function cmdEnsure(scope, yesFlag, noFlag) {
   }
 
   // 交互确认
-  const entry = key0 => {
+  const entry = (key0: string): {sizeHint?: string; version?: string} | undefined => {
     if (key0 === 'clt') {
       const k = platformKey();
-      return k && lock.clt[k];
+      return k ? lock.clt[k] : undefined;
     }
-    return lock[key0 === 'runtime-pack' ? 'runtimePack' : 'dotnet'];
+    return key0 === 'runtime-pack' ? lock.runtimePack : lock.dotnet;
   };
   console.log('\n[env] 检测到缺失组件：');
   for (const name of toInstall) {
     const item = entry(name);
-    const hint = item ? item.sizeHint || '' : '';
-    const label = name === 'runtime-pack' ? 'ohos-net runtime pack' : name === 'dotnet' ? `.NET SDK ${lock.dotnet.version}` : `OHOS CLT ${item && item.version}`;
+    const hint = item?.sizeHint || '';
+    const label = name === 'runtime-pack' ? 'ohos-net runtime pack' : name === 'dotnet' ? `.NET SDK ${lock.dotnet.version}` : `OHOS CLT ${item?.version}`;
     console.log(`  - ${label} ${hint}`);
   }
-  const downloadDir = name =>
+  const downloadDir = (name: string): string =>
     name === 'runtime-pack' ? runtimePackTarget : name === 'dotnet' ? path.join(toolchainDir, 'dotnet') : path.join(toolchainDir, 'command-line-tools');
   console.log('  安装位置：');
   for (const name of toInstall) console.log(`    ${downloadDir(name)}`);
@@ -816,10 +966,10 @@ async function cmdEnsure(scope, yesFlag, noFlag) {
 /**
  * install 子命令：强制/手动安装指定组件（不询问，用户意图已明确）。
  *
- * @param {string[]} names
- * @param {boolean} force
+ * @param names - 组件名列表；为空时安装全部自动组件
+ * @param force - 是否强制重装
  */
-async function cmdInstall(names, force) {
+async function cmdInstall(names: string[], force: boolean): Promise<void> {
   const targets = names.length ? names : AUTO_COMPONENTS;
   for (const name of targets) {
     if (!AUTO_COMPONENTS.includes(name)) {
@@ -844,8 +994,10 @@ async function cmdInstall(names, force) {
 // CLI 解析
 // ---------------------------------------------------------------------------
 
+// 子命令与标志解析：ensure（默认）/ status / install
 const argv = process.argv.slice(2);
-const command = argv[0] && !argv[0].startsWith('--') ? argv[0] : 'ensure';
+const first = argv[0];
+const command = first !== undefined && !first.startsWith('--') ? first : 'ensure';
 const flags = new Set(argv.filter(arg => arg.startsWith('--')));
 const yesFlag = flags.has('--yes');
 const noFlag = flags.has('--no');

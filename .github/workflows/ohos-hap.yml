@@ -109,7 +109,7 @@ jobs:
           unzip -q clt.zip -d "$HOME/ohos-clt"
           # 自动探测解压后的工具根目录（兼容不同 zip 层级），以 bin/hvigorw 为锚点。
           CLT_ROOT="$(dirname "$(dirname "$(find "$HOME/ohos-clt" -maxdepth 3 -name hvigorw -path "*/bin/*" | head -1)")")"
-          echo "OHOS_COMMAND_LINE_TOOLS_ROOT=$CLT_ROOT" >> "$GITHUB_ENV"
+          echo "DEVECO_CLI_CLT_PATH=$CLT_ROOT" >> "$GITHUB_ENV"
           # build:link:csharp 以 OHOS_SDK_ROOT 定位 Native SDK（锚点 native/oh-uni-package.json）
           echo "OHOS_SDK_ROOT=$CLT_ROOT/sdk/default" >> "$GITHUB_ENV"
           echo "command-line-tools: $CLT_ROOT"
@@ -118,14 +118,14 @@ jobs:
       - name: Verify OHOS toolchain
         run: |
           set -e
-          test -x "$OHOS_COMMAND_LINE_TOOLS_ROOT/bin/hvigorw"
-          test -x "$OHOS_COMMAND_LINE_TOOLS_ROOT/bin/ohpm"
+          test -x "$DEVECO_CLI_CLT_PATH/bin/hvigorw"
+          test -x "$DEVECO_CLI_CLT_PATH/bin/ohpm"
           test -x "$OHOS_SDK_ROOT/openharmony/toolchains/hdc"
           test -d "$OHOS_SDK_ROOT/openharmony/native"
-          "$OHOS_COMMAND_LINE_TOOLS_ROOT/bin/ohpm" -v
+          "$DEVECO_CLI_CLT_PATH/bin/ohpm" -v
           cd "$RUNNER_TEMP"
-          DEVECO_SDK_HOME="$OHOS_COMMAND_LINE_TOOLS_ROOT/sdk" \
-            "$OHOS_COMMAND_LINE_TOOLS_ROOT/bin/hvigorw" --version
+          DEVECO_SDK_HOME="$DEVECO_CLI_CLT_PATH/sdk" \
+            "$DEVECO_CLI_CLT_PATH/bin/hvigorw" --version
 
       - name: Fetch ohos-net runtime pack
         run: |
@@ -156,10 +156,7 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Build web editor
-        run: pnpm build
-
-      - name: Build C# link bridge
+      - name: Set up .NET for C# link bridge
         run: |
           # setup-dotnet 已经导出正确的 DOTNET_ROOT；只有缺失时才按 dotnet 可执行文件位置推导。
           # 注意：dirname 只能取一层（$DOTNET_ROOT/dotnet 与可执行文件同目录），取两层会少一级。
@@ -169,9 +166,8 @@ jobs:
           fi
           test -x "$DOTNET_ROOT/dotnet" || { echo "::error::dotnet not found under DOTNET_ROOT=$DOTNET_ROOT"; exit 1; }
           dotnet --version
-          pnpm build:link:csharp
-          ls -la apps/tesslo/entry/libs/arm64-v8a/
 
+      # build:hap 自带编辑器/Web/C# Link 全链（link 需要 DOTNET_ROOT，见上一步）
       - name: Bundle OHOS HAP (unsigned)
         run: pnpm build:hap
 

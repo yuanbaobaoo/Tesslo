@@ -5,11 +5,11 @@
 ```sh
 git clone <repo> && cd tesslo
 pnpm install      # 装依赖 + 环境检测；缺失的 CLT/.NET/runtime pack 会询问是否下载（y/N）
-pnpm build        # 全链构建：编辑器 → web → C# Link → 未签名 HAP + App 包
-pnpm build:signed # 同上，但产出签名包（需要 JDK 与华为账号调试签名，见"签名"）
+pnpm build:hap    # 全链构建：编辑器 → web → C# Link → 未签名 HAP（--signed 出调试签名）
+pnpm build:app    # 全链 → release 模式 + 上架签名的 App 包（见"签名"）
 ```
 
-前置硬依赖只有两个：**Node ≥ 20 + pnpm**、**JDK 17+**（与 Node 同级，只探测、绝不自动下载；
+前置硬依赖只有两个：**Node ≥ 22.18 + pnpm**（脚本为 TypeScript，用 Node 原生类型擦除直接运行）、**JDK 17+**（与 Node 同级，只探测、绝不自动下载；
 hvigor 的打包 `app_packing_tool.jar` 与签名 `hap-sign-tool.jar` 都是 Java 实现）。JDK 缺失时
 `pnpm env:status` 会给出指引，建议 Temurin：<https://adoptium.net/>。
 
@@ -20,7 +20,7 @@ hvigor 的打包 `app_packing_tool.jar` 与签名 `hap-sign-tool.jar` 都是 Jav
 
 | 工具 | 来源 | 用途 |
 | --- | --- | --- |
-| Node.js + pnpm | Node ≥ 20；pnpm 11.21.0 | workspace 与脚本（前置硬依赖） |
+| Node.js + pnpm | Node ≥ 22.18（原生跑 .ts 脚本）；pnpm 11.21.0 | workspace 与脚本（前置硬依赖） |
 | JDK 17+ | 本机安装（Temurin 等） | hvigor 打包/签名（前置硬依赖，不自动下载） |
 | HarmonyOS Command Line Tools | `pnpm install` 自愈下载（Release `tools`），或本机已有 | hvigor、hdc、Native SDK |
 | .NET SDK 9.0.104 | `pnpm install` 自愈下载（微软官方 CDN），或本机已有 | C# Link 与 NativeAOT |
@@ -35,14 +35,17 @@ CLT 分卷托管在 GitCode [`ohos-tools` v26.0](https://gitcode.com/yuanbaobaoo
 与 CI 锁定值一致）。.NET 走微软官方 CDN 并在安装后用 `dotnet --version` 校验。
 CI 的 Linux CLT 仍从 GitHub Release 拉取（851 同源同哈希），暂未切换到 GitCode。
 
-## 环境检测与自愈（scripts/env.mjs）
+## 环境检测与自愈（scripts/env.ts）
 
 每次 `pnpm install`（postinstall）与 `build:link:csharp` / `build:hap` / `build:app` /
 `dev:ohos`（前置 ensure）都会走同一套决策矩阵：
 
-1. **显式声明**（`.env` 里有该 key，或真实环境变量有值）→ 只校验、绝不下载；
-   路径无效直接报错指出问题行。
+1. **显式声明**（`.env` 里有该 key，或 shell / CI 导出的真实环境变量有值）→ 只校验、
+   绝不下载；路径无效直接报错指出问题行。
 2. **探测**（候选链见 `.env.example`；`.toolchain/` 是自愈安装的约定落点）→ 找到即用。
+   CLT 位置优先认 devecocli 标准变量 `DEVECO_CLI_CLT_PATH`（构建脚本与 devecocli
+   共用，在 shell 配置里 export 即可，无需 `.env`）；未声明时从 PATH 上的 SDK 工具
+   （hvigorw/hdc）反推根路径，脚本不探测任何机器路径。
 3. **缺失** → 列表询问 `y/N`（大小写不敏感）：确认后下载到 `.toolchain/` 并生成
    `.env.toolchain`（加载优先级低于 `.env`）；拒绝则跳过，构建阶段会给出
    `pnpm env:install <组件>` 的提示。
@@ -64,10 +67,8 @@ pnpm env:install [组件] [--force] # 手动/强制安装（不询问）
 
 ```sh
 pnpm install                  # workspace 依赖 + 环境检测自愈
-pnpm build                    # 全链：编辑器 + web + C# Link + 未签名 HAP + App 包
-pnpm build:signed             # 全链 + 签名 HAP 与 App 包
-pnpm build:hap                # 只出 HAP（--signed 可选，默认未签名）
-pnpm build:app                # 只出 App 包（assembleApp，--signed 可选）
+pnpm build:hap                # 全链：编辑器 + web + C# Link → 未签名 HAP；--signed 出调试签名
+pnpm build:app                # 全链 → release 模式 + 上架签名的 App 包（上传 AGC）
 pnpm build:link:csharp        # C# Link + NAPI + 运行库部署
 pnpm test                     # TypeScript Link 协议测试
 ```
@@ -89,10 +90,11 @@ OHOS Native SDK（`OHOS_SDK_ROOT`，或 CLT 根推导）。
 
 ## HAP / App 内容
 
-`pnpm build[:hap|:app]` 按以下顺序组装：
+`pnpm build:hap` / `build:app` 均自带全链（编辑器 → web → C# Link），再按以下顺序组装：
 
-1. 确认 `web/dist/index.html`；缺失时先运行 `pnpm build`。
-2. `entry/libs/arm64-v8a/` 缺 `.so` 时自动补跑 `build:link:csharp`。
+1. 构建 `web/dist`（`build:editor` + `build:web`；直接调脚本且产物已存在时跳过）。
+2. 部署 `entry/libs/arm64-v8a/` 的 C# Link `.so`（`build:link:csharp`；直接调脚本
+   且 `.so` 已存在时跳过）。
 3. 复制 `web/dist` 到 `entry/src/main/resources/rawfile`。
 4. 把 `apps/tesslo/assets/fetched` 以硬链接铺到 `rawfile/static/fetched`
    （不支持硬链接的文件系统回退为复制）。
@@ -103,8 +105,8 @@ OHOS Native SDK（`OHOS_SDK_ROOT`，或 CLT 根推导）。
 ```text
 apps/tesslo/entry/build/default/outputs/default/
   entry-default-unsigned.hap / entry-default-signed.hap
-apps/tesslo/build/outputs/default/
-  entry-default-unsigned.app / entry-default-signed.app
+apps/tesslo/build/outputs/<product>/
+  entry-default-unsigned.app（default，CI）/ entry-*-signed.app（release，上架）
 ```
 
 包内包含：
@@ -125,20 +127,51 @@ apps/tesslo/build/outputs/default/
 
 ## 签名
 
-默认产出未签名包，供本地检查或自行签名。加 `--signed`（或 `pnpm build:signed`）
-走签名流程。若 `build-profile.json5` 没有 `signingConfigs`，脚本会调用 devecocli
-（workspace devDependency，经 `pnpm exec` 调用）生成调试签名材料：
+原理、材料角色与完整流程详见[发布签名详解](release-signing.md)。
 
-```text
-devecocli signature generate --product default
-```
+`build:hap` 默认产出未签名包（`--signed` 出调试签名）；`build:app` 固定
+release 模式 + 上架签名，用 `-p product=release` 选择上架 product（hvigor
+没有选择签名配置的命令行参数，签名随 product 声明；构建全程不改写
+build-profile.json5）。签名材料在 `build-profile.json5` 的 signingConfigs
+（本机文件，不入 git）：
 
-首次生成需要登录华为账号。签名材料位于 `~/.ohos/config/`，并与 bundleName、华为
-账号和设备绑定：
+- `default`：调试签名。若文件缺失或没有 `signingConfigs`，脚本会调用 devecocli
+  （workspace devDependency，经 `pnpm exec` 调用）生成调试签名材料：
 
-- 修改 `AppScope/app.json5` 的 `bundleName` 后必须重新生成。
-- 删除本地 `build-profile.json5` 可强制重新生成。
-- `build-profile.json5` 与 `*.local` 文件都不提交。
+  ```text
+  devecocli signature generate --product default
+  ```
+
+  首次生成需要登录华为账号。调试材料与 bundleName、华为账号和设备绑定：修改
+  `AppScope/app.json5` 的 `bundleName` 后必须重新生成；删除本地
+  `build-profile.json5` 可强制重新生成。
+
+- `release`：上架签名（AGC 发布证书 + 发布 Profile），**由用户手工维护**——
+  材料路径、keyAlias、密码都填在 `build-profile.json5` 的 release signingConfig
+  里；`pnpm build:app` 只校验它存在并在构建期间临时切换，不生成、不改写：
+
+  1. `pnpm signing:keygen`：交互式输入证书名称、密码（不回显，输两遍），在
+     当前目录 `.certs/` 下生成 `<名称>.p12`（0600）与 `<名称>.csr`（申请证书
+     用的中间产物，构建不用）。`.certs/` 含私钥，已入 `.gitignore`。同名重跑
+     需 `--force` 并确认（会作废用旧密钥签发的证书）。
+  2. AGC 签发（证书/Profile 只能由 AGC 签发，devecocli 的 `signature generate`
+     仅覆盖调试签名）：「证书管理」上传 CSR 申请**发布证书**下载 `.cer`，
+     「Profile 管理」申请**发布** Profile（选该证书与本应用）下载 `.p7b`。
+  3. 手工维护 `build-profile.json5`（模板已内置上架 product 与 applyToProducts）：
+     signingConfigs 加 release 条目填材料路径、keyAlias、密码（七个字段含义见
+     [发布签名详解](release-signing.md)；`certpath` 必须是单证书文件，证书链需
+     自行拆出叶子；**密码必须是 `pnpm signing:encrypt` 生成的密文**（keygen
+     也会直接输出），明文不可用）；再给 release product 加
+     `signingConfig: 'release',` 一行。
+  4. `pnpm build:app`：开头校验 product 已声明（缺失立刻报错，不进长构建）
+     → 全链构建 → hvigor 以 `-p product=release -p buildMode=release` 打包
+     （不改写任何文件）；产物 `apps/tesslo/build/outputs/release/*-signed.app`
+     直接上传 AGC。
+
+`pnpm build:app` 默认 release 模式 + 上架签名：构建期间临时把 product 指向
+`release` 签名配置、结束后还原；产物 `apps/tesslo/build/outputs/default/*-signed.app`
+直接上传 AGC。`pnpm build:hap --signed` 与 `pnpm dev:ohos` 用调试签名装真机调试。
+`build-profile.json5` 与 `*.local` 文件都不提交。
 
 ## 离线构建
 
@@ -146,7 +179,7 @@ devecocli signature generate --product default
 
 ```sh
 pnpm install --offline --store-dir <local-store>
-pnpm build
+pnpm build:hap
 ```
 
 构建过程不访问任何素材 CDN 或上游 GitHub 仓库；`apps/tesslo/assets/fetched`

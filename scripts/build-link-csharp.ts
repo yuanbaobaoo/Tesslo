@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 
-import {hapRoot, repoRoot} from './ohos-common.mjs';
+import {hapRoot, repoRoot, resolveOhosNativeSdk} from './ohos-common.ts';
 
 // 构建 C# Scratch Link（NativeAOT -> ScratchLinkOhos.so）与 NAPI 桥
 // （tesslo_link_napi.cpp -> libtesslolink.so），并部署进 HAP 的 entry/libs。
@@ -14,7 +14,7 @@ const dotnetCandidates = [
   process.env.DOTNET_ROOT,
   path.join(repoRoot, '.toolchain/dotnet'),
   process.env.HOME && path.join(process.env.HOME, '.dotnet')
-].filter(Boolean);
+].filter((candidate): candidate is string => Boolean(candidate));
 const dotnetRoot = dotnetCandidates.find(root => fs.existsSync(path.join(root, 'dotnet')));
 if (!dotnetRoot) {
   console.error('[link:csharp] dotnet not found; run `pnpm env:install dotnet` or set DOTNET_ROOT');
@@ -22,23 +22,17 @@ if (!dotnetRoot) {
 }
 const dotnet = path.join(dotnetRoot, 'dotnet');
 
-const sdkCandidates = [
-  process.env.OHOS_SDK_ROOT,
-  // env.mjs 自愈安装的 CLT 自带 Native SDK
-  path.join(repoRoot, '.toolchain/command-line-tools/sdk/default'),
-  // 本机固定版本回退路径；仅作兜底，优先用 OHOS_SDK_ROOT 覆盖
-  '/Users/Shared/local/ohos/command-line-tools_26.0.0_Beta1/sdk/default',
-  process.env.HOME && path.join(process.env.HOME, 'Library/Huawei/Sdk'),
-  '/Applications/DevEco-Studio.app/Contents/sdk/default'
-].filter(Boolean);
-const sdkRoot = sdkCandidates.find(candidate =>
-  fs.existsSync(path.join(candidate, 'openharmony/native/oh-uni-package.json')) ||
-  fs.existsSync(path.join(candidate, 'native/oh-uni-package.json'))
-);
-if (!sdkRoot) {
-  console.error('[link:csharp] OHOS Native SDK not found; set OHOS_SDK_ROOT');
+// Native SDK 位置统一走环境变量解析（OHOS_SDK_ROOT → CLT 根推导），见 ohos-common.ts；
+// 不做任何机器路径猜测
+const sdk = resolveOhosNativeSdk();
+if (!sdk) {
+  console.error(
+    '[link:csharp] OHOS Native SDK not found; set OHOS_SDK_ROOT (or ' +
+      'DEVECO_CLI_CLT_PATH) in .env / environment, or put hvigorw/hdc on PATH'
+  );
   process.exit(1);
 }
+const sdkRoot = sdk.root;
 
 // Native SDK 定位：openharmony/native 目录下含 sysroot 与 llvm 交叉工具链
 const env = {
@@ -47,12 +41,17 @@ const env = {
   // msbuild 用 DOTNET_HOST_PATH 定位宿主 dotnet；不设会解析到系统里
   // 其他版本（如 10.x），导致 ohos-net 的 SDK resolver 启动失败（exit 150）
   DOTNET_HOST_PATH: dotnet,
+  // 让 MSBuild 侧（OpenHarmonyCross.targets）与脚本解析到同一份 SDK
+  OHOS_SDK_ROOT: sdkRoot,
   PATH: `${dotnetRoot}${path.delimiter}${process.env.PATH}`
 };
+
 /**
  * dotnet publish：NativeAOT 交叉编译到 linux-musl-arm64（OHOS ABI）。
+ *
+ * @param project - csproj 路径
  */
-const publish = project => {
+function publish(project: string): void {
   const result = spawnSync(
     dotnet,
     [
@@ -69,17 +68,15 @@ const publish = project => {
     {cwd: repoRoot, stdio: 'inherit', env}
   );
   if (result.status !== 0) process.exit(result.status ?? 1);
-};
+}
 
 // scratch-link-ohos：基于上游 scratch-link-common 的 OHOS 平台实现，
 // 产物 ScratchLinkOhos.so（含 NAPI 宿主导出 TessloLinkStart/Stop/Version）
 const ohosProject = path.join(repoRoot, 'packages/scratch-link/scratch-link-ohos/scratch-link-ohos.csproj');
 publish(ohosProject);
 
-// SDK 新旧布局兼容：native 可能在 openharmony/ 下或直接在根下
-const nativeRoot = fs.existsSync(path.join(sdkRoot, 'openharmony/native'))
-  ? path.join(sdkRoot, 'openharmony/native')
-  : path.join(sdkRoot, 'native');
+// native 布局（openharmony/ 下或根下）已由 resolveOhosNativeSdk 判定
+const nativeRoot = sdk.nativeRoot;
 // NAPI 桥：把 C# 的 [UnmanagedCallersOnly] 导出包装成 Node-API 模块
 const clang = path.join(nativeRoot, 'llvm/bin/clang++');
 // 兼容层是 C 源码，必须用 clang（而非 clang++）编译，避免符号被 C++ mangle
