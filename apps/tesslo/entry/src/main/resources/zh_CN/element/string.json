@@ -25,10 +25,6 @@
       "value": "打开新窗口"
     },
     {
-      "name": "read_write_user_file",
-      "value": "访问用户主目录以存储会话数据并使用 zsh 环境"
-    },
-    {
       "name": "access_bluetooth",
       "value": "连接 micro:bit 等蓝牙设备"
     },

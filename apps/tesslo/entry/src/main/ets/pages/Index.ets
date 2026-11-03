@@ -1,9 +1,11 @@
 import { webview } from '@kit.ArkWeb';
 import { window } from '@kit.ArkUI';
+import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import fs from '@ohos.file.fs';
 
 import { log } from '../common/AppLog';
+import { DownloadSaver } from '../common/DownloadSaver';
+import { WebPermissionHandler } from '../common/WebPermissionHandler';
 
 // 注入 WebView 的 WebGL 能力探测脚本：结果写入设备日志，用于真机排查 GPU 渲染问题
 const WEBGL_PROBE = `(() => {
@@ -25,6 +27,8 @@ struct Index {
   // 自由多窗等形态下窗口不再与状态栏重叠，避让高度需动态跟随
   @State private statusBarInsetVp: number = 0;
   private controller: webview.WebviewController = new webview.WebviewController();
+  private downloadSaver: DownloadSaver | null = null;
+  private permissionHandler: WebPermissionHandler | null = null;
   private mainWindow: window.Window | null = null;
 
   /**
@@ -38,7 +42,7 @@ struct Index {
   }
 
   /**
-   * 页面销毁前触发：解除窗口事件监听，避免回调悬挂。
+   * 页面销毁前触发：解除窗口事件监听并清理未完成的下载任务。
    */
   aboutToDisappear(): void {
     if (this.mainWindow) {
@@ -49,12 +53,15 @@ struct Index {
         log(`unlisten window events failed: ${(error as BusinessError).message}`);
       }
     }
+    this.downloadSaver?.dispose();
+    this.downloadSaver = null;
   }
 
   build() {
     Column() {
       Web({src: $rawfile('index.html'), controller: this.controller})
-        .onControllerAttached(() => this.registerDownloadDelegate())
+        .onControllerAttached(() => this.attachWebFeatures())
+        .onPermissionRequest((event: OnPermissionRequestEvent) => this.handleWebPermission(event))
         .javaScriptAccess(true)
         .domStorageAccess(true)
         .fileAccess(true)
@@ -124,31 +131,41 @@ struct Index {
   }
 
   /**
-   * 注册下载代理：sb3 导出等下载统一起到应用沙箱 Download 目录。
+   * 控制器就绪后注册下载保存器与页面权限处理器；页面宿主 context 为 UIAbilityContext。
    */
-  private registerDownloadDelegate(): void {
-    const delegate: webview.WebDownloadDelegate = new webview.WebDownloadDelegate();
-    delegate.onBeforeDownload((item: webview.WebDownloadItem) => {
-      const suggested: string = item.getSuggestedFileName() || 'tesslo.sb3';
-      // 下载文件名只落应用沙箱，仍过滤非法字符避免目录逃逸
-      const name: string = suggested.replace(/[\\/:*?"<>|]/g, '_');
-      const dir: string = `${getContext(this).filesDir}/Download`;
-      const target: string = `${dir}/${name}`;
+  private attachWebFeatures(): void {
+    const hostContext: common.Context | undefined = this.getUIContext().getHostContext();
+    if (hostContext === undefined) {
+      log('web features: missing host context');
+      return;
+    }
+    this.downloadSaver?.dispose();
+    this.downloadSaver = new DownloadSaver(hostContext, this.getUIContext());
+    this.downloadSaver.register(this.controller);
+    this.permissionHandler = new WebPermissionHandler(hostContext);
+  }
+
+  /**
+   * ArkWeb 页面权限请求入口：音视频采集交给 WebPermissionHandler，其余拒绝。
+   */
+  private handleWebPermission(event: OnPermissionRequestEvent): void {
+    const handler: WebPermissionHandler | null = this.permissionHandler;
+    if (handler === null) {
+      log('web permission handler not ready');
       try {
-        fs.mkdirSync(dir, true);
-        item.start(target);
-        log(`download start ${target}`);
+        event.request.deny();
       } catch (error) {
-        log(`download failed: ${error.message}`);
-        item.cancel();
+        log(`web permission deny failed: ${(error as BusinessError).message}`);
+      }
+      return;
+    }
+    void handler.handle(event.request).catch((error: Error) => {
+      log(`web permission handling failed: ${error.message}`);
+      try {
+        event.request.deny();
+      } catch (denyError) {
+        log(`web permission deny failed: ${(denyError as BusinessError).message}`);
       }
     });
-    delegate.onDownloadFinish((item: webview.WebDownloadItem) => {
-      log(`download finish ${item.getUrl()}`);
-    });
-    delegate.onDownloadFailed((item: webview.WebDownloadItem) => {
-      log(`download failed ${item.getUrl()} code=${item.getLastErrorCode()}`);
-    });
-    this.controller.setDownloadDelegate(delegate);
   }
 }

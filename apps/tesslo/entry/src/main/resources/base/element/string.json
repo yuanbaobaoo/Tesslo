@@ -41,26 +41,6 @@
       "value": "OpenNewWindow"
     },
     {
-      "name": "read_pasteboard",
-      "value": "Read clipboard content"
-    },
-    {
-      "name": "read_write_user_file",
-      "value": "Access user home directory for session data and the zsh environment"
-    },
-    {
-      "name": "documents_dir",
-      "value": "Access documents directory"
-    },
-    {
-      "name": "desktop_dir",
-      "value": "Access desktop directory"
-    },
-    {
-      "name": "download_dir",
-      "value": "Access download directory"
-    },
-    {
       "name": "TaskManagerAbility_desc",
       "value": "TaskManagerAbility"
     },
