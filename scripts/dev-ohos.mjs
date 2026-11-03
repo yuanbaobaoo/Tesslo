@@ -72,11 +72,17 @@ try {
     }
 
     console.log(`[dev:ohos] ${serial}: start ${abilityName}`);
-    const remoteLog = `/data/app/el2/100/base/${bundleName}/files/tesslo-main.log`;
-    try {
-      run(toolchain.hdc, ['-t', serial, 'shell', 'rm', '-f', remoteLog], {stdio: 'ignore'});
-    } catch {
-      // log may not exist yet
+    // AbilityStage 的 filesDir 可能落在模块级 haps/entry/files，也可能在应用级 files
+    const remoteLogs = [
+      `/data/app/el2/100/base/${bundleName}/haps/entry/files/tesslo-main.log`,
+      `/data/app/el2/100/base/${bundleName}/files/tesslo-main.log`
+    ];
+    for (const remoteLog of remoteLogs) {
+      try {
+        run(toolchain.hdc, ['-t', serial, 'shell', 'rm', '-f', remoteLog], {stdio: 'ignore'});
+      } catch {
+        // log may not exist yet
+      }
     }
     const startArgs = ['-t', serial, 'shell', 'aa', 'start', '-a', abilityName, '-b', bundleName];
     if (bleSim) startArgs.push('--ps', 'tessloBleSim', 'true');
@@ -86,15 +92,27 @@ try {
     await new Promise(resolve => setTimeout(resolve, STARTUP_WAIT_MS));
 
     const localLog = path.join(evidenceDir, `${serial}-tesslo-main.log`);
-    try {
-      run(toolchain.hdc, ['-t', serial, 'file', 'recv', remoteLog, localLog], {stdio: 'ignore'});
-      const log = fs.existsSync(localLog) ? fs.readFileSync(localLog, 'utf8') : '';
+    fs.rmSync(localLog, {force: true});
+    let hasLog = false;
+    for (const remoteLog of remoteLogs) {
+      try {
+        run(toolchain.hdc, ['-t', serial, 'file', 'recv', remoteLog, localLog], {stdio: 'ignore'});
+        if (fs.existsSync(localLog) && fs.statSync(localLog).size > 0) {
+          hasLog = true;
+          break;
+        }
+      } catch {
+        // try next candidate
+      }
+    }
+    if (hasLog) {
+      const log = fs.readFileSync(localLog, 'utf8');
       const interesting = log
         .split(/\r?\n/)
         .filter(line => /boot |Scratch Link|BLE bridge|webgl probe|page (begin|end)|error/i.test(line))
         .slice(-12);
       if (interesting.length) console.log(interesting.join('\n'));
-    } catch {
+    } else {
       console.log('[dev:ohos] main log not available yet');
     }
 
