@@ -20,6 +20,7 @@ signing.*.local.json
 .env.toolchain
 .toolchain/
 .zcode
+.hvigor
 
 apps/tesslo/entry/libs/
 apps/tesslo/entry/src/main/resources/rawfile/
@@ -36,6 +37,3 @@ apps/tesslo/build-profile*.local
 # signing:keygen 产物（含私钥，绝不入库）
 .certs/
 /.pnpm-store/
-
-# ZCode 工作区目录（会话状态，不入库）
-.zcode/
