@@ -1,6 +1,9 @@
 {
   app: {
     products: [
+      // 未签名/CI 用 product：pnpm build:hap 默认选择，也是 hvigor/DevEco Studio
+      // 不指定 product 时的约定名。永不挂签名——正式包名的调试签名已废弃，真机
+      // 调试装机一律走下面的 dev product。
       {
         name: 'default',
         compatibleSdkVersion: '26.0.0',
@@ -26,6 +29,23 @@
           },
         },
       },
+      // 调试 product：dev:ohos / build:hap --signed 用 -p product=dev 选择。独立包名与
+      // 桌面名，和正式版共存于同一设备（包名、桌面名由 hvigor 多目标定制覆盖，
+      // AppScope/app.json5 保持正式值）。signingConfig: 'dev' 由脚本调 devecocli
+      // 首次生成调试签名时回填，勿手工添加；见 docs/build.md。
+      {
+        name: 'dev',
+        bundleName: 'io.github.yuanbaobaoo.tesslo.dev',
+        label: '$string:app_name_dev',
+        compatibleSdkVersion: '26.0.0',
+        compatibleSdkVersionStage: 'release',
+        runtimeOS: 'HarmonyOS',
+        buildOption: {
+          nativeLib: {
+            collectAllLibs: true,
+          },
+        },
+      },
     ],
     buildModeSet: [
       { name: 'debug' },
@@ -37,9 +57,16 @@
       name: 'entry',
       srcPath: './entry',
       targets: [
+        // default target = 正式资源（无覆盖），供 default（未签名/CI）与
+        // release（上架签名）两个 product 共用
         {
           name: 'default',
           applyToProducts: ['default', 'release'],
+        },
+        // dev product 专用 target：覆盖 EntryAbility 桌面名（见 entry/build-profile.json5）
+        {
+          name: 'dev',
+          applyToProducts: ['dev'],
         },
       ],
     },

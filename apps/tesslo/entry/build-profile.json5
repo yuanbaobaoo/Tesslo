@@ -6,6 +6,23 @@
       "name": "default"
     },
     {
+      // dev product 的 target：桌面名换成 Tesslo-dev，与正式版区分
+      "name": "dev",
+      "source": {
+        "abilities": [
+          {
+            "name": "EntryAbility",
+            "label": "$string:EntryAbility_label_dev"
+          }
+        ]
+      },
+      // 快捷方式 wants 写死了包名，hvigor 只替换模块级 metadata 里的快捷方式，
+      // EntryAbility 上的这份要靠 resources_dev 中的同名 profile 覆盖成 dev 包名
+      "resource": {
+        "directories": ["./src/main/resources_dev", "./src/main/resources"]
+      }
+    },
+    {
       "name": "ohosTest"
     }
   ]

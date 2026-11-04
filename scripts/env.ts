@@ -174,6 +174,7 @@ function explicitValue(key: string): string | undefined {
 function platformKey(): CltAssetKey | null {
   if (process.platform === 'darwin') return process.arch === 'arm64' ? 'mac-arm64' : 'mac-x64';
   if (process.platform === 'linux' && process.arch === 'x64') return 'linux-x64';
+  if (process.platform === 'win32' && process.arch === 'x64') return 'windows-x64';
   return null;
 }
 
@@ -214,12 +215,19 @@ function locateAnchor(from: string, anchor: string, maxDepth: number = 3): strin
 }
 
 /**
- * 查 PATH 上的命令位置；探测失败返回空串。
+ * 查 PATH 上的命令位置；探测失败返回空串。unix 用 command -v，win32 用系统
+ * 内置 where（无扩展名目标需按 PATHEXT 形态分别探测，可能多处命中取第一行）。
  *
  * @param name - 命令名
  * @returns 命令绝对路径；不在 PATH 上返回空串
  */
 function commandOnPath(name: string): string {
+  if (process.platform === 'win32') {
+    const hits = [name, `${name}.bat`, `${name}.cmd`, `${name}.exe`]
+      .map(candidate => capture('where', [candidate]))
+      .filter(output => output.length > 0);
+    return hits[0]?.split(/\r?\n/)[0] ?? '';
+  }
   const result = spawnSync('sh', ['-c', `command -v ${name}`], {encoding: 'utf-8'});
   return result.status === 0 ? result.stdout.trim() : '';
 }
@@ -445,7 +453,8 @@ function capture(command: string, args: string[]): string {
  * @param dest - 目标文件
  */
 function download(url: string, dest: string): void {
-  if (!capture('sh', ['-c', 'command -v curl'])) {
+  // curl：unix 常见预装；Windows 10 1803+ 自带 curl.exe
+  if (!commandOnPath('curl')) {
     throw new Error('curl not found; install curl first');
   }
   const result = spawnSync(
@@ -487,14 +496,20 @@ async function verifySha256(file: string, expected: string | null): Promise<void
 }
 
 /**
- * 解压 zip 到目标目录；优先 unzip，darwin 无 unzip 时退回系统 ditto。
+ * 解压 zip 到目标目录；win32 用系统 tar.exe（bsdtar，Windows 10+ 内置，支持
+ * zip），其余平台优先 unzip，darwin 无 unzip 时退回系统 ditto。
  *
  * @param zip - zip 文件
  * @param destDir - 目标目录
  */
 function extractZip(zip: string, destDir: string): void {
   fs.mkdirSync(destDir, {recursive: true});
-  if (capture('sh', ['-c', 'command -v unzip'])) {
+  if (process.platform === 'win32') {
+    const result = spawnSync('tar', ['-xf', zip, '-C', destDir], {stdio: 'inherit'});
+    if (result.status !== 0) throw new Error(`tar failed: ${zip}`);
+    return;
+  }
+  if (commandOnPath('unzip')) {
     const result = spawnSync('unzip', ['-q', zip, '-d', destDir], {stdio: 'inherit'});
     if (result.status !== 0) throw new Error(`unzip failed: ${zip}`);
     return;
@@ -521,19 +536,23 @@ function extractTar(file: string, destDir: string, zst: boolean): void {
     if (result.status !== 0) throw new Error(`tar failed: ${file}`);
     return;
   }
-  // macOS 较新系统自带 libarchive 的 zstd 支持；先试 tar --zstd 再试 zstd 管道
+  // macOS 较新系统自带 libarchive 的 zstd 支持；先试 tar --zstd 再试 zstd 管道。
+  // Windows 系统 tar.exe（bsdtar）不带 zstd、也无 zstd.exe，给出明确指引
   const probe = spawnSync('tar', ['--zstd', '-tf', file], {encoding: 'utf8', stdio: 'ignore'});
   if (probe.status === 0) {
     const result = spawnSync('tar', ['--zstd', '-xf', file, '-C', destDir], {stdio: 'inherit'});
     if (result.status !== 0) throw new Error(`tar --zstd failed: ${file}`);
     return;
   }
-  if (capture('sh', ['-c', 'command -v zstd'])) {
+  if (commandOnPath('zstd')) {
     const result = spawnSync('sh', ['-c', `zstd -dc '${file}' | tar -xf - -C '${destDir}'`], {stdio: 'inherit'});
     if (result.status !== 0) throw new Error(`zstd|tar failed: ${file}`);
     return;
   }
-  throw new Error('no zstd decoder available (需要 tar --zstd 支持或安装 zstd)');
+  throw new Error(
+    'no zstd decoder available (需要 tar --zstd 支持或安装 zstd；Windows 暂不支持 runtime pack ' +
+      '自动解压，可解压后用 OHOS_NET_RUNTIME_PACK 指向目录)'
+  );
 }
 
 /**
@@ -611,7 +630,7 @@ async function installClt(force: boolean): Promise<void> {
   const entry = key ? lock.clt[key] : undefined;
   if (!entry) {
     throw new Error(
-      `当前平台（${process.platform}/${process.arch}）不支持 CLT 自动安装（支持 mac-arm64 / linux-x64）；请参考 docs/build.md 手动安装`
+      `当前平台（${process.platform}/${process.arch}）不支持 CLT 自动安装（支持 mac-arm64 / linux-x64 / windows-x64）；请参考 docs/build.md 手动安装`
     );
   }
   if (entry.sha256 === null) {
@@ -883,8 +902,9 @@ async function cmdEnsure(scope: string | undefined, yesFlag: boolean, noFlag: bo
   }
 
   // 平台不支持自动安装的组件在询问前就报错，避免用户确认后才失败；
-  // postinstall（无 scope）场景只警告不中断——Windows 等平台不应因此装不了依赖。
-  // Intel mac（mac-x64）与 Windows 明确不支持：不提供 CLT 资产，直接按平台不支持报错
+  // postinstall（无 scope）场景只警告不中断——工具链不全的平台不应因此装不了依赖。
+  // Intel mac（mac-x64）无 CLT 资产、.NET 无 Windows 资产：按组件级不支持报错
+  // （CLT 的 windows-x64 资产已启用，见 toolchain.lock.json）
   const key = platformKey();
   const cltEntry = key ? lock.clt[key] : undefined;
   const unsupported: string[] = [];
@@ -895,7 +915,7 @@ async function cmdEnsure(scope: string | undefined, yesFlag: boolean, noFlag: bo
     if (name === 'clt') {
       if (!key || !cltEntry) {
         supported = false;
-        reason = `当前平台 ${process.platform}/${process.arch} 不支持（支持 mac-arm64 / linux-x64）`;
+        reason = `当前平台 ${process.platform}/${process.arch} 不支持（支持 mac-arm64 / linux-x64 / windows-x64）`;
       } else if (cltEntry.sha256 === null) {
         supported = false;
         reason = 'Release 资产尚未上传';

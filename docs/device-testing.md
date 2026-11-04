@@ -12,7 +12,33 @@ pnpm build:hap
 pnpm dev:ohos -- --device <serial>
 ```
 
-`dev:ohos` 会签名、安装、启动，等待权限弹窗后收集日志与截图：
+`dev:ohos` 会签名、安装、启动，等待权限弹窗后收集日志与截图。它部署的是 dev 身份
+（包名 `io.github.yuanbaobaooo.tesslo.dev`、桌面名 `Tesslo-dev`），与设备上的正式版
+共存、互不覆盖；首次运行会用 devecocli 生成 dev 调试签名，需要已登录华为账号
+（`devecocli auth login`）。签名失效或新设备装不上时加 `--resign` 重签，详见
+[构建与打包](build.md)的"dev 身份"与"签名"两节。
+
+### 首次运行（零干预）
+
+新机器 `pnpm install` 后直接 `pnpm dev:ohos` 即可：
+
+- **未登录**：提示按回车，`devecocli auth login` 拉起浏览器完成登录（等待回调最长
+  10 分钟）；
+- **无设备**：自动启动第一个已停止的模拟器实例；没有实例则交互选择设备类型
+  （`2in1` / `tablet`）与系统版本（缺镜像先下载，可能耗时数十分钟），创建并启动
+  后轮询 `hdc list targets`（最长 180s）；
+- 模拟器协议未接受时提示执行 `devecocli emulator license`（脚本不代签）；模拟器
+  能力不可用（Linux、未装 DevEco Studio）时按"无设备"给出真机接入指引。
+
+脚本化场景用参数跳过菜单（仅在无设备时生效）：
+
+| 参数 | 作用 |
+| --- | --- |
+| `--emulator <name>` | 直接启动指定实例 |
+| `--emulator-device-type <t>` + `--emulator-os-version "<v>"` | 非交互创建新实例（两者必须成对） |
+| `--no-emulator` | 禁止自动启动/创建，无设备直接报错 |
+
+设计与交互决策见 [dev:ohos 首次运行体验](dev-ohos-onboarding.md)。
 
 ```text
 build/verify/<serial>-tesslo-main.log
@@ -97,7 +123,7 @@ hdc -t <serial> fport tcp:20111 tcp:20111
 
 | 文件 | 内容 |
 | --- | --- |
-| `/data/app/el2/100/base/io.github.yuanbaobaoo.tesslo/files/tesslo-link.log` | C# Link 监听、客户端、扫描结果 |
+| `/data/app/el2/100/base/io.github.yuanbaobaoo.tesslo.dev/files/tesslo-link.log` | C# Link 监听、客户端、扫描结果（dev:ohos 部署的 dev 版；正式版去掉 `.dev`） |
 | `build/verify/<serial>-tesslo-main.log` | ArkWeb 启动、页面加载、WebGL 探测 |
 
 WebGL 检查行：

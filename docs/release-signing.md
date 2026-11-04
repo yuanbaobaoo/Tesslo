@@ -61,22 +61,30 @@ AGC 直接下载的 `.cer` 若只含一张证书，`certpath` 直接填它；若
 - **不含任何密钥**，只是公开证书的副本，无保密需求；
 - 生成一次长期复用；AGC 换发新证书后重跑该命令覆盖刷新即可。
 
-## 两套签名配置：default（调试）与 release（上架）
+## 两套签名配置：dev（调试）与 release（上架）
 
-`apps/tesslo/build-profile.json5`（本机文件，不入 git）里并存两组 signingConfig：
+`apps/tesslo/build-profile.json5`（本机文件，不入 git）里并存两组在用的 signingConfig：
 
-| | `default` | `release` |
+| | `dev` | `release` |
 | --- | --- | --- |
-| 用途 | 真机开发调试 | 商店上架 |
+| 用途 | 真机开发调试（dev 身份，与正式版共存） | 商店上架 |
+| 包名 | `io.github.yuanbaobaoo.tesslo.dev` | `io.github.yuanbaobaoo.tesslo` |
 | 材料 | devecocli 自动生成的调试证书/Profile（华为账号登录，绑定设备） | AGC 申请的发布三件套（`.env` 提供） |
 | 谁在用 | `pnpm build:hap --signed`、`pnpm dev:ohos` | `pnpm build:app` |
 | 产出 | debug 模式 signed HAP | release 模式 signed App |
 
 hvigor 的签名选择挂在 **product**（`products[].signingConfig` 引用名字）而不是
 buildMode 上——`buildModeSet` 只管编译行为（混淆、调试信息），签名是另一条正交的
-轴；且签名配置没有对应的命令行参数，只能随 product 声明。因此用**双 product**：
-`default`（调试签名，`dev:ohos` / `build:hap --signed` 用）与 `release`（上架签名，
-`build:app` 用 `-p product=release` 选择），构建全程不改写 build-profile.json5。
+轴；且签名配置没有对应的命令行参数，只能随 product 声明。因此按 product 分开：
+`dev`（调试签名，`dev:ohos` / `build:hap --signed` 用）与 `release`（上架签名，
+`build:app` 用 `-p product=release` 选择）；`default` product 只出未签名包（CI）。
+构建全程不改写 build-profile.json5。
+
+调试签名只给 dev 身份用，是因为 devecocli 每次生成都会删除并重建账号共用的
+`auto_debug` 调试证书，两个包名各用一套自动签名材料会互相顶掉。dev 签名的生成
+条件与重签方式见[构建与打包](build.md)的"签名"一节。旧机器上遗留的 `default`
+调试签名配置已无用途（材料已作废），连同 `default` product 上的
+`signingConfig: 'default'` 引用一并删除；`default` product 只用于未签名构建。
 
 ## 端到端流程
 
@@ -123,9 +131,9 @@ hvigor 用 `-p product=release` 选择。换材料、换密码直接编辑 `buil
 
 | 命令 | buildMode | 签名 | 产物与用途 |
 | --- | --- | --- | --- |
-| `pnpm build:hap` | debug | 未签名 | unsigned.hap（CI / 本地检查） |
-| `pnpm build:hap --signed` | debug | default 调试 | signed.hap 真机安装调试 |
-| `pnpm dev:ohos` | debug | default 调试 | 签名→装机→启动→收集日志 |
+| `pnpm build:hap` | debug | 未签名 | unsigned.hap（CI / 本地检查），正式包名 |
+| `pnpm build:hap --signed` | debug | dev 调试 | signed.hap（`.dev` 包名）真机安装调试 |
+| `pnpm dev:ohos` | debug | dev 调试 | 签名→装机→启动→收集日志（`.dev` 包名，不覆盖正式版） |
 | `pnpm build:app` | release | **release 上架** | signed.app，传 AGC |
 
 `.app` 不是"另一种应用"，而是上架容器：assembleApp 以 release 配置**从头构建**签名

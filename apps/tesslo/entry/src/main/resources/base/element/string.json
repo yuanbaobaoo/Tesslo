@@ -13,6 +13,10 @@
       "value": "Tesslo"
     },
     {
+      "name": "EntryAbility_label_dev",
+      "value": "Tesslo-dev"
+    },
+    {
       "name": "BrowserAbility_desc",
       "value": "description"
     },
