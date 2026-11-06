@@ -25,6 +25,76 @@
             boot.textContent = `加载失败：${event.message || '未知错误'}`;
         });
     </script>
+    <script>
+        /**
+         * AudioContext 自愈桥（在 main.js 之前注册，确保编辑器创建的每个 context 都被跟踪）。
+         *
+         * 背景：scratch-audio 只在首次手势时把 context resume 到 running，随后移除全部监听；
+         * 系统静音切换、后台打断等造成的挂起（或 ArkWeb 渲染器卡在静音位）之后无人恢复。
+         * 这里补三类恢复路径：
+         *   1. statechange 挂起时尽力 resume；
+         *   2. 页面可见/回前台/任意手势时 resume 非 running 的 context；
+         *   3. __tessloResumeAudio(true) 强制 suspend->resume，供鸿蒙壳层在系统取消静音后调用，
+         *      连同 WebviewController.setAudioMuted(false) 一起清掉渲染器卡死的静音状态。
+         */
+        (() => {
+            const NativeAC = window.AudioContext || window.webkitAudioContext;
+            if (!NativeAC) return;
+            const contexts = [];
+
+            const track = ctx => {
+                if (!ctx || contexts.indexOf(ctx) !== -1) return ctx;
+                contexts.push(ctx);
+                try {
+                    ctx.addEventListener('statechange', () => {
+                        if (ctx.state !== 'running') {
+                            try { ctx.resume(); } catch (e) { /* 尽力恢复，失败留给下一次 kick */ }
+                        }
+                    });
+                } catch (e) { /* 老内核无 addEventListener 时只跳过监听 */ }
+                return ctx;
+            };
+
+            // 返回真实 context 的包装：new 得到的即原生实例，instanceof 经 prototype 依旧成立
+            const PatchedAC = function () {
+                return track(new NativeAC());
+            };
+            PatchedAC.prototype = NativeAC.prototype;
+            window.AudioContext = PatchedAC;
+            if (window.webkitAudioContext) window.webkitAudioContext = PatchedAC;
+
+            window.__tessloGetAudioContexts = () => contexts.filter(ctx => ctx && ctx.state !== 'closed');
+            window.__tessloResumeAudio = force => {
+                let touched = 0;
+                window.__tessloGetAudioContexts().forEach(ctx => {
+                    try {
+                        if (ctx.state !== 'running') {
+                            ctx.resume();
+                            touched++;
+                        } else if (force) {
+                            ctx.suspend().then(() => ctx.resume()).catch(() => {});
+                            touched++;
+                        }
+                    } catch (e) { /* 单个 context 失败不影响其余 */ }
+                });
+                return touched;
+            };
+
+            const kick = () => {
+                try { window.__tessloResumeAudio(false); } catch (e) { /* 自愈失败静默 */ }
+            };
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) kick();
+            });
+            window.addEventListener('pageshow', event => {
+                if (event && event.persisted) kick();
+            });
+            window.addEventListener('focus', kick);
+            ['pointerdown', 'touchend', 'keydown'].forEach(type => {
+                document.addEventListener(type, kick, {capture: true, passive: true});
+            });
+        })();
+    </script>
     <script src="main.js"></script>
 </body>
 </html>

@@ -4,6 +4,7 @@ import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 
 import { log } from '../common/AppLog';
+import { AudioRecovery } from '../common/AudioRecovery';
 import { DownloadSaver } from '../common/DownloadSaver';
 import { WebPermissionHandler } from '../common/WebPermissionHandler';
 
@@ -55,6 +56,7 @@ struct Index {
     }
     this.downloadSaver?.dispose();
     this.downloadSaver = null;
+    AudioRecovery.stop();
   }
 
   build() {
@@ -79,6 +81,8 @@ struct Index {
               log(`webgl probe ${result}`);
             }
           });
+          // 页面加载完成后再启动静音恢复监听（runJavaScript 依赖页面就绪）
+          AudioRecovery.start(this.controller);
         })
         .onConsole((event) => {
           const message: string = event?.message?.getMessage() ?? '';

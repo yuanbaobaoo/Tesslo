@@ -4,6 +4,7 @@ import { deviceInfo, BusinessError } from '@kit.BasicServicesKit';
 import * as tesslolink from 'libtesslolink.so';
 
 import { log } from '../common/AppLog';
+import { AudioRecovery } from '../common/AudioRecovery';
 import { ASSET_SERVER_PORT, BLE_BRIDGE_PORT, LINK_PORT } from '../common/Ports';
 import { startTessloBleBridge, stopTessloBleBridge } from '../ble/BleTcpBridge';
 import { startAssetServer, stopAssetServer } from '../assets/AssetServer';
@@ -49,6 +50,14 @@ export default class EntryAbility extends UIAbility {
         log(`loadContent failed: ${error.code} ${error.message}`);
       }
     });
+  }
+
+  /**
+   * 回到前台时触发：若系统未静音则强制恢复一次 WebView 音频，
+   * 覆盖“后台被打断/系统静音切换后回前台”这一路（详见 common/AudioRecovery.ets）。
+   */
+  onForeground(): void {
+    AudioRecovery.kick();
   }
 
   /**

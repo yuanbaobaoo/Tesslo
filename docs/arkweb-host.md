@@ -23,6 +23,29 @@ Web({src: $rawfile('index.html'), controller: this.controller})
 
 页面加载完成后执行 WebGL 探测并把结果写入 `tesslo-main.log`，便于真机验证。
 
+## 静音恢复
+
+华为审核反馈过：PC（MateBook Pro）上系统静音开关关闭后，应用声音不再恢复。
+根因是 scratch-audio 只在首次手势时把共享的 `AudioContext` resume 到 `running`
+并随即移除全部监听，之后没有任何机制恢复系统切换造成的挂起或渲染器级静音。
+修复分两层，互相独立、都失败才真的无声：
+
+- 页面层（`apps/tesslo/web/src/index.html` 内联脚本，先于 `main.js` 注册）：
+  包装 `AudioContext` 构造器跟踪所有实例，`statechange` 挂起时尽力 `resume`；
+  页面可见、回前台、任意手势时恢复非 `running` 的 context；对外暴露
+  `__tessloResumeAudio(force)`，`force=true` 时对 `running` 的做
+  `suspend -> resume` 强制重绑渲染器音频管道。
+- 壳层（`common/AudioRecovery.ets`，`Index.ets` 在 `onPageEnd` 启动）：
+  经 `AudioVolumeManager` 监听 `streamVolumeChange` 与旧版 `volumeChange`，
+  另有 2s 轮询兜底（PC 静音切换不保证触发事件）；检测到“静音 -> 取消静音”
+  翻转后 `setAudioMuted(false)` 清掉 WebView 静音位并注入上面的恢复脚本。
+  系统仍静音时绝不动作，避免顶掉系统静音。`EntryAbility.onForeground`
+  回前台时若系统未静音再强制恢复一次，覆盖后台打断这一路。
+
+验证步骤：应用内播放声音 → 系统设置开静音（应无声）→ 关静音 → 声音应在
+事件或 2s 轮询内恢复，`tesslo-main.log` 出现 `system unmuted, kicking web audio`。
+模拟器音频不走真实 HAL 时可能复现不了卡静音，以真机复测为准。
+
 ## 能力边界
 
 | 能力 | 提供方 |
