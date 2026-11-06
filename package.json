@@ -1,6 +1,6 @@
 {
   "name": "tesslo",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "Tesslo - an unofficial, Scratch-compatible block editor for HarmonyOS 7",
