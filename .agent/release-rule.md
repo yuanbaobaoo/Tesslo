@@ -103,8 +103,10 @@ Tesslo-vX.Y.Z-dev.<GITHUB_RUN_NUMBER>-unsigned.hap
 
 ## 边界与易混点
 
-- `tools` Release 是构建依赖（CLT 分卷、ohos-net runtime pack），与 app 版本无关；
-  **不要**把依赖资产塞进 `v*` app Release。
+- CLT 分卷的正源是 GitCode `ohos-tools v26.0`（`scripts/toolchain.lock.json`
+  声明，CI 直接从那里下载，整包 SHA-256 锁定）；`tools` Release 只托管
+  ohos-net runtime pack，与 app 版本无关；**不要**把依赖资产塞进
+  `v*` app Release。改动 CLT 下载源必须同步 lock 与 CI 的哈希锁定。
 - 离线素材在 `apps/tesslo/assets/fetched`，随仓库提交，不是 Release 资产；
   构建不访问 CDN。
 - 本仓库只发 HarmonyOS HAP；macOS/Windows/Linux 官方构建不在 CI 范围内。
@@ -122,8 +124,9 @@ Tesslo-vX.Y.Z-dev.<GITHUB_RUN_NUMBER>-unsigned.hap
 - 已推送 tag 不可复用/移动；发坏了 bump patch 再发。
 - 不要本地构建 Release 产物；本地只做门禁和冒烟验证，发布以 CI 为准。
 - 不要手动编辑 Release body 或 latest 别名；CI 负责覆盖。
-- 不要删除/移动 `tools` Release 的 CLT 或 runtime pack 资产；
-  CI 的 SHA-256 校验会直接失败。
+- 不要删除/移动 `tools` Release 的 runtime pack 资产，也不要动 GitCode
+  `ohos-tools` 的 CLT 分卷（2026-11 曾因 tools Release 重建丢失 CLT 分卷
+  导致 tag CI 全挂）；CI 的 SHA-256 校验会直接失败。
 
 ## CI 配套修改清单（已实现）
 

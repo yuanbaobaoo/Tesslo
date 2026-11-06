@@ -92,10 +92,11 @@ jobs:
         run: |
           set -e
           mkdir -p /tmp/clt && cd /tmp/clt
-          # 官方原包 26.0.0.851（API 26），分卷托管在本仓 GitHub Release tools；
-          # cat 合并为字节级无损拼接。
+          # 官方原包 26.0.0.851（API 26），分卷托管在 GitCode ohos-tools v26.0
+          # （toolchain.lock.json 的声明正源；GitHub Release tools 只放 runtime
+          # pack，其 CLT 分卷已遗失）；cat 合并为字节级无损拼接。
           EXPECTED_SHA256="ab604bd92721d5cbcafd154e6461d46b9f1b105e7b89eab04a9d046681198082"
-          BASE="https://github.com/yuanbaobaoo/Tesslo/releases/download/tools"
+          BASE="https://gitcode.com/yuanbaobaoo/ohos-tools/releases/download/v26.0"
           if [ -n "$OHOS_CLT_URL" ]; then
             curl -fL --retry 3 "$OHOS_CLT_URL" -o clt.zip
           else
