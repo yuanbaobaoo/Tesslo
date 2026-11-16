@@ -83,9 +83,11 @@ const BrowserModal = props => {
                                     />
                                 ),
                                 a: previewFaqLink => (
+                                    // HAP 页面 origin 是 resource://，//host 会被解析成
+                                    // resource://host；外链必须写全 https，才能交给系统浏览器
                                     <a
                                         className={styles.faqLink}
-                                        href="//scratch.mit.edu/3faq"
+                                        href="https://scratch.mit.edu/3faq"
                                     >
                                         {previewFaqLink}
                                     </a>

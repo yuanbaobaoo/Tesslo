@@ -49,12 +49,21 @@ const AboutModal = ({logo, onRequestClose}) => (
             rel="noreferrer"
             className="tesslo-about-link"
           >
-            github.com/yuanbaobaoo/Tesslo
+            https://github.com/yuanbaobaoo/Tesslo
           </a>
         </p>
         <p className="tesslo-about-link-row">开源协议：AGPL-3.0</p>
       </div>
-      <div className="tesslo-about-footer">Powered by Scratch</div>
+      <div className="tesslo-about-footer">
+        <a
+          href="https://github.com/scratchfoundation"
+          target="_blank"
+          rel="noreferrer"
+          className="tesslo-about-link"
+        >
+          Powered by Scratch
+        </a>
+      </div>
     </div>
   </div>
 );

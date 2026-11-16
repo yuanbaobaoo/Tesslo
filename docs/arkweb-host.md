@@ -23,6 +23,40 @@ Web({src: $rawfile('index.html'), controller: this.controller})
 
 页面加载完成后执行 WebGL 探测并把结果写入 `tesslo-main.log`，便于真机验证。
 
+## 外部链接
+
+编辑器里的网页外链一律交给系统默认浏览器，不在 ArkWeb 内打开：否则当前页面会
+被网页替换，编辑器和未保存的作品一起丢失。实现分两层，覆盖所有常见跳法：
+
+- `Index.ets` 的 `onLoadIntercept` 拦截主 frame 导航（普通 `<a href>`、
+  `window.location.href` 赋值等）；
+- `multiWindowAccess(true)` + `onWindowNew` 拦截 `window.open` 与
+  `target="_blank"`；回调里必须调用 `setWebController(null)` 取消应用内新窗口，
+  否则 Web 内核会等待控制器而阻塞渲染进程；
+- `common/ExternalLink.ets` 判定地址：`resource:`/`about:`/`blob:`/`data:` 和
+  `127.0.0.1:20114` 素材服务留在应用内，其余 http(s) 先走 `openLink`，失败再回退
+  `ohos.want.action.viewData` 隐式 Want（官方“拉起浏览器应用”方案）；
+- 若同一次点击同时触发两条回调，`ExternalLink` 对同一 URL 做 1.5s 去重，
+  避免重复打开浏览器标签页。
+
+当前生效的外链入口（scratch-gui 与 Web 入口共用上述拦截，不再逐个改组件）：
+
+| 入口 | 位置 |
+| --- | --- |
+| 「关于 Tesslo」的 GitHub / Powered by Scratch 链接 | `apps/tesslo/web/src/about-modal.jsx` |
+| 教程卡片的外部资源链接 | `packages/scratch-gui/src/components/cards/cards.jsx` |
+| 扩展连接弹窗的帮助链接（`window.open`） | `packages/scratch-gui/src/containers/connection-modal.jsx` |
+| micro:bit 固件更新链接 | `packages/scratch-gui/src/components/connection-modal/update-peripheral-step.jsx` |
+| 云变量 FAQ 链接 | `packages/scratch-gui/src/lib/alerts/index.jsx` |
+| 全屏舞台的 Scratch Logo | `packages/scratch-gui/src/components/stage-header/stage-header.jsx` |
+| 不支持浏览器时的 FAQ 链接 | `packages/scratch-gui/src/components/browser-modal/browser-modal.jsx` |
+
+页面 origin 是 `resource://rawfile`，协议相对链接（`//host/path`）会被解析成
+`resource://host/path` 而不是 https；browser-modal 里唯一一处已改成完整的
+`https://`，新增外链时也必须写全 scheme。
+
+应用内导航（rawfile 页面、素材服务回环地址、blob 下载）不受影响。
+
 ## 静音恢复
 
 华为审核反馈过：PC（MateBook Pro）上系统静音开关关闭后，应用声音不再恢复。

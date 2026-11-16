@@ -6,6 +6,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { log } from '../common/AppLog';
 import { AudioRecovery } from '../common/AudioRecovery';
 import { DownloadSaver } from '../common/DownloadSaver';
+import { ExternalLink, isExternalWebUrl } from '../common/ExternalLink';
 import { WebPermissionHandler } from '../common/WebPermissionHandler';
 
 // 注入 WebView 的 WebGL 能力探测脚本：结果写入设备日志，用于真机排查 GPU 渲染问题
@@ -30,6 +31,7 @@ struct Index {
   private controller: webview.WebviewController = new webview.WebviewController();
   private downloadSaver: DownloadSaver | null = null;
   private permissionHandler: WebPermissionHandler | null = null;
+  private externalLink: ExternalLink | null = null;
   private mainWindow: window.Window | null = null;
 
   /**
@@ -64,6 +66,10 @@ struct Index {
       Web({src: $rawfile('index.html'), controller: this.controller})
         .onControllerAttached(() => this.attachWebFeatures())
         .onPermissionRequest((event: OnPermissionRequestEvent) => this.handleWebPermission(event))
+        // 外链统一交给系统默认浏览器：主 frame 导航与 window.open 两条路径都拦截
+        .onLoadIntercept((event: OnLoadInterceptEvent) => this.handleLoadIntercept(event))
+        .multiWindowAccess(true)
+        .onWindowNew((event: OnWindowNewEvent) => this.handleWindowNew(event))
         .javaScriptAccess(true)
         .domStorageAccess(true)
         .fileAccess(true)
@@ -147,6 +153,55 @@ struct Index {
     this.downloadSaver = new DownloadSaver(hostContext, this.getUIContext());
     this.downloadSaver.register(this.controller);
     this.permissionHandler = new WebPermissionHandler(hostContext);
+    // UIAbility 页面的 host context 必然是 UIAbilityContext；openLink/startAbility 依赖它
+    this.externalLink = new ExternalLink(hostContext as common.UIAbilityContext);
+  }
+
+  /**
+   * 主 frame 即将导航：外部网页拦截后交给系统浏览器，应用内页面与子 frame 放行。
+   * 返回 true 表示阻止 Web 组件加载该 URL。
+   */
+  private handleLoadIntercept(event: OnLoadInterceptEvent): boolean {
+    const request: WebResourceRequest = event.data;
+    const url: string = request.getRequestUrl();
+    if (!request.isMainFrame() || !isExternalWebUrl(url)) {
+      return false;
+    }
+    log(`external link intercepted: ${url}`);
+    this.openExternal(url);
+    return true;
+  }
+
+  /**
+   * 页面请求新窗口（window.open / target=_blank）：一律不创建应用内窗口，
+   * 外部网页交给系统浏览器；下载弹窗等内部窗口请求直接取消。
+   */
+  private handleWindowNew(event: OnWindowNewEvent): void {
+    try {
+      // 必须显式传 null：不调用 setWebController 会让 Web 内核一直等待而阻塞渲染进程
+      event.handler.setWebController(null);
+    } catch (error) {
+      log(`cancel new window failed: ${(error as BusinessError).message}`);
+    }
+    const url: string = event.targetUrl;
+    if (!isExternalWebUrl(url)) {
+      log(`blocked in-app popup: ${url}`);
+      return;
+    }
+    log(`external link in new window: ${url}`);
+    this.openExternal(url);
+  }
+
+  /**
+   * 交给 ExternalLink 打开外部网页；控制器就绪前的请求只记录，不再改回应用内导航。
+   */
+  private openExternal(url: string): void {
+    const opener: ExternalLink | null = this.externalLink;
+    if (opener === null) {
+      log(`external link ignored before web features ready: ${url}`);
+      return;
+    }
+    opener.open(url);
   }
 
   /**

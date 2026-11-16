@@ -93,3 +93,8 @@
     font-size: 0.75rem;
     color: #9aa0b4;
 }
+
+.tesslo-about-footer .tesslo-about-link {
+    color: #9aa0b4;
+    text-decoration: none;
+}

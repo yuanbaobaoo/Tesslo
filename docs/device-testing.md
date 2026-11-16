@@ -53,6 +53,10 @@ build/verify/<serial>-tesslo.jpeg
 ## 编辑器界面
 
 - 左上角显示 Scratch 字标，菜单栏右上角有帮助按钮。
+- 点击「关于 Tesslo」里的 GitHub 链接应打开系统默认浏览器，编辑器页面保持在
+  原处不跳转；日志出现 `external link in new window` / `external link intercepted`。
+  教程卡片、扩展帮助等外链同样走系统浏览器（见
+  [ArkWeb 宿主](arkweb-host.md)的“外部链接”）。
 - 打开角色库、造型库或背景库时，缩略图应从本地素材服务加载，不访问外网。
 - `文件 → 保存到电脑` 应弹出系统保存选择器，默认文件名 `Scratch作品.sb3`；
   保存后文件出现在用户选择的目录。
