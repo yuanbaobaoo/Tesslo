@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Скретч — це найбільша у світі спільнота кодування для дітей, а також мова кодування з простим візуальним інтерфейсом, яка дозволяє молодим людям створювати цифрові історії, ігри й анімації. Розробку та модерування Скретчу здійснює некомерційна організація {foundationLink}.",
+    "about.introTwo": "Скретч розвиває обчислювальне мислення та навички вирішення проблем, сприяє творчому навчанню, самовираженню та співпраці, а також рівності у сфері компʼютерних технологій.",
+    "about.introThree": "Скретч завжди буде безплатним. Він доступний понад 70 мовами.",
+    "about.foundationText": "Фундація Скретчу",
+    "about.introParents": "Для батьків",
+    "about.introEducators": "Для вчителів",
+    "about.introLearnMore": "Learn more at Scratch Foundation",
+    "about.support": "Support Scratch",
+    "about.supportDescription1": "Scratch is available for free, thanks to our {supportersLink}. This support helps us provide young people around the world with opportunities to imagine, create, and share.",
+    "about.supportDescription2": "Every dollar donated gives one child access to free, playful, and powerful creative learning through the Scratch community.",
+    "about.supportDescription3": "Join us in helping kids everywhere create what they imagine.",
+    "about.supportersLinkText": "supporters",
+    "about.donateButton": "Пожертва"
+}

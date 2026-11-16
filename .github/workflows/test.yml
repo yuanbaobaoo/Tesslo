@@ -1,0 +1,31 @@
+# 纯 JS 测试（scratch-link 服务端 + 协议一致性），仅 PR 触发。
+# push master 不触发 CI：门禁在本地（pnpm test，见 .agent/release-rule.md）；
+# tag 发版链路的测试在 ohos-hap.yml 内执行。
+
+name: Test
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    name: Node tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test

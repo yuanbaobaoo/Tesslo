@@ -1,0 +1,43 @@
+{
+  "name": "tesslo",
+  "version": "0.1.2",
+  "private": true,
+  "type": "module",
+  "description": "Tesslo - an unofficial, Scratch-compatible block editor for HarmonyOS 7",
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@11.21.0",
+  "scripts": {
+    "signing:keygen": "node scripts/release-keygen.ts",
+    "signing:encrypt": "node scripts/signing-encrypt.ts",
+    "postinstall": "node scripts/env.ts ensure",
+    "env:status": "node scripts/env.ts status",
+    "env:install": "node scripts/env.ts install",
+    "build:editor": "pnpm build:blocks && pnpm build:storage && pnpm build:svg-renderer && pnpm build:render && pnpm build:vm && pnpm build:audio && pnpm build:l10n && pnpm build:paint && pnpm build:gui",
+    "build:blocks": "pnpm --filter scratch-blocks build",
+    "build:storage": "pnpm --filter scratch-storage build",
+    "build:svg-renderer": "pnpm --filter @scratch/scratch-svg-renderer exec webpack",
+    "build:render": "pnpm --filter @scratch/scratch-render exec webpack",
+    "build:vm": "pnpm --filter @scratch/scratch-vm exec webpack",
+    "build:audio": "pnpm --filter scratch-audio build",
+    "build:l10n": "pnpm --filter scratch-l10n build",
+    "build:paint": "pnpm --filter scratch-paint build",
+    "build:gui": "pnpm --filter @scratch/scratch-gui run clean && pnpm --filter @scratch/scratch-gui run build:dist",
+    "build:web": "pnpm --filter @tesslo/app build:web",
+    "build:link:csharp": "node scripts/env.ts ensure --for link && node scripts/build-link-csharp.ts",
+    "build:hap": "node scripts/build-hap.ts",
+    "build:app": "node scripts/build-hap.ts --app --product release",
+    "dev:ohos": "node scripts/env.ts ensure --for signed && node scripts/dev-ohos.ts",
+    "typecheck:scripts": "tsc -p scripts",
+    "test": "pnpm typecheck:scripts && pnpm test:link",
+    "test:link": "node --test packages/scratch-link/test/*.test.js tests/*.test.js"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "devDependencies": {
+    "@deveco/deveco-cli": "1.3.0-stable",
+    "@types/node": "^22.0.0",
+    "json5": "^2.2.3",
+    "typescript": "^5.8.0"
+  }
+}

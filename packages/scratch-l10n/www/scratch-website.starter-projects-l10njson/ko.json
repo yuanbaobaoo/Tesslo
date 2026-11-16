@@ -1,0 +1,20 @@
+{
+    "starterProjects.starterProjects": "초보자용 프로젝트",
+    "starterProjects.thinkBigStartSmallTitle": "크게 생각하고… 작게 시작하세요!",
+    "starterProjects.thinkBigStartSmallBody": "모든 스크래치 프로젝트는 스크래치 고양이와 함께 시작됩니다. 스크래치 고양이가 안녕이라고 말하게 하거나, 빙글빙글 돌리거나, 색깔을 바꿔보세요. 더 많이 배우면서 이야기, 게임, 애니메이션 등 상상하는 모든 것을 만들 수 있습니다!",
+    "starterProjects.howToUseScratchTitle": "스타터 프로젝트 사용 방법",
+    "starterProjects.howToUseScratchBody": "스타터 프로젝트에는 간단한 코드가 포함되어 있어 이를 리믹스하여 자신만의 창작물을 만들 수 있으므로 처음부터 시작할 필요가 없습니다! 코드 안에 있는 설명을 참고하세요. 시작하려면 \"리믹스\"를 클릭한 다음 \"내부 보기\"를 클릭하세요.",
+    "starterProjects.animation": "애니메이션",
+    "starterProjects.games": "게임",
+    "starterProjects.interactiveArt": "인터랙티브 아트",
+    "starterProjects.music": "음악",
+    "starterProjects.stories": "이야기",
+    "starterProjects.mathScience": "수학 및 과학",
+    "starterProjects.extensions": "확장 프로그램",
+    "starterProjects.communityKindness": "커뮤니티와 친절",
+    "starterProjects.surpriseMe": "놀라게 해주세요",
+    "starterProjects.gettingStarted": "시작하기",
+    "starterProjects.newToScratch": "스크래치가 처음이신가요? 시작 튜토리얼을 시도하세요.",
+    "starterProjects.gettingStartedImageDescription": "그림 속 소년이 갓 칠한 산봉우리 꼭대기에 깃발을 꽂습니다.",
+    "starterProjects.tryIt": "체험하기!"
+}

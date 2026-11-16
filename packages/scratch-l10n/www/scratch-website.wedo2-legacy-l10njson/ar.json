@@ -1,0 +1,22 @@
+{
+    "wedoLegacy.intro": "إن LEGO Education WeDo 2.0 هي طاقم اختراعات للمبتدئين تستطيع استخدامه لبناء ماكيناتك التفاعلية. تستطيع استخدام وحدات سكراتش لتتفاعل مع مصنوعاتك من الليجو وكذلك عمل رسوم متحركة مرتبطة بها على الشاشة. ",
+    "wedoLegacy.requirement": "يتوفر ملحق LEGO WeDo 2.0 لنظامي التشغيل Mac OSX و Windows 10+.",
+    "wedoLegacy.getStarted": "البدء باستخدام LEGO WeDo 2.0",
+    "wedoLegacy.installTitle": "1. تثبيت مدير الجهاز",
+    "wedoLegacy.installText": "يتيح لك مدير الجهاز توصيل WeDo 2.0 بـ Scratch باستخدام البلوتوث",
+    "wedoLegacy.downloadMac": "تنزيل لنظام macOS",
+    "wedoLegacy.downloadWin": "تنزيل لنظام التشغيل Windows 10+",
+    "wedoLegacy.setupTitle": "2. الإعداد والمساعدة",
+    "wedoLegacy.setupText": "قم بتوصيل WeDo 2.0 الخاص بك باتباع الخطوات الموجودة في <a href=\"/projects/editor/?tip_bar=ext2\">نافذة التلميحات</a>",
+    "wedoLegacy.setupTextHTML": "وصّل جهاز WeDo 2.0 الخاص بك باتباع الخطوات الواردة في <a>نافذة التلميحات</a>",
+    "wedoLegacy.createTitle": "3. إنشاء",
+    "wedoLegacy.createText": "استخدم كتل إضافة WeDo لتشغيل الأضواء والتحكم في المحركات وجعل مشروعك تفاعليًا",
+    "wedoLegacy.wedo2SetupInstructions": "تعليمات إعداد WeDo 2.0",
+    "wedoLegacy.wedo1SetupInstructions": "تعليمات إعداد WeDo 1.0",
+    "wedoLegacy.starterProjects": "مشاريع WeDo 2.0 للمبتدئين",
+    "wedoLegacy.starterMotor": "المحرك",
+    "wedoLegacy.starterDistance": "مستشعر المسافة",
+    "wedoLegacy.starterTilt": "مستشعر الإمالة",
+    "wedoLegacy.versionTitle": "أي إصدار لديك؟",
+    "wedoLegacy.versionText": "يمكنك أيضًا استخدام سكراتش لبرمجة LEGO WeDo الأصلي (LEGO WeDo 1.0)."
+}

@@ -1,0 +1,15 @@
+{
+    "about.introOne": "스크래치는 세계 최대 규모의 어린이 코딩 커뮤니티이자 청소년들이 디지털 스토리, 게임, 애니메이션을 만들 수 있는 간단한 시각적 인터페이스를 갖춘 코딩 언어입니다. 스크래치는 비영리 단체인 {foundationLink}에 의해 설계, 개발 및 조정됩니다.",
+    "about.introTwo": "스크래치는 컴퓨터 사고 및 문제 해결 기술, 창의적인 교육 및 학습, 자기 표현 및 협업, 컴퓨팅의 공정성을 촉진합니다.",
+    "about.introThree": "스크래치는 항상 무료이며 70개 이상의 언어로 제공됩니다.",
+    "about.foundationText": "스크래치 재단",
+    "about.introParents": "부모님들을 위한 정보",
+    "about.introEducators": "교육자들을 위한 정보",
+    "about.introLearnMore": "스크래치 재단에서 더 알아보기",
+    "about.support": "스크래치 후원하기",
+    "about.supportDescription1": "스크래치는 {supportersLink} 덕분에 무료로 이용할 수 있습니다. 이러한 지원은 전 세계 젊은이들에게 상상하고, 만들고, 공유할 기회를 제공하는 데 도움이 됩니다.",
+    "about.supportDescription2": "1달러를 기부할 때마다 한 명의 어린이가 스크래치 커뮤니티를 통해 무료로 즐겁고 강력한 창의적 학습을 경험할 수 있습니다.",
+    "about.supportDescription3": "전 세계 어린이들이 상상하는 것을 만들 수 있도록 함께 도와주세요.",
+    "about.supportersLinkText": "기여자",
+    "about.donateButton": "기부"
+}

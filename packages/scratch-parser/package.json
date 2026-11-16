@@ -1,0 +1,33 @@
+{
+  "name": "scratch-parser",
+  "description": "Parser for Scratch projects",
+  "author": "MIT Media Lab",
+  "license": "AGPL-3.0-only",
+  "main": "index.js",
+  "scripts": {
+    "test:lint": "eslint . --ext=js",
+    "test:unit": "tap test/unit/*.js",
+    "test:integration": "tap test/integration/*.js",
+    "test:coverage": "tap test/{unit,integration}/*.js --coverage --coverage-report=lcov",
+    "test:benchmark": "node test/benchmark/performance.js",
+    "test": "npm run test:unit && npm run test:integration"
+  },
+  "dependencies": {
+    "ajv": "^6.3.0",
+    "jszip": "^3.1.5",
+    "pify": "^4.0.1"
+  },
+  "devDependencies": {
+    "@commitlint/travis-cli": "7.2.1",
+    "babel-eslint": "10.1.0",
+    "benchmark": "2.1.4",
+    "eslint": "8.57.0",
+    "eslint-config-scratch": "9.0.7",
+    "glob": "7.2.3",
+    "tap": "11.1.5"
+  },
+  "engines": {
+    "node": ">=8.0"
+  },
+  "version": "6.0.0"
+}

@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Scratch on maailman suurin lapsille tarkoitettu koodausyhteisö ja koodauskieli. Siinä on yksinkertainen visuaalinen käyttöliittymä, jolla nuoret voivat luoda digitaalisia tarinoita, pelejä ja animaatioita. Scratchin suunnittelija, kehittäjä ja moderoija on {foundationLink}, voittoa tavoittelematon organisaatio.",
+    "about.introTwo": "Scratch edistää laskennallista ajattelua ja ongelmanratkaisukykyä, luovaa opetusta ja oppimista, itseilmaisua ja yhteistyötä sekä oikeudenmukaisuutta tietojenkäsittelyssä.",
+    "about.introThree": "Scratch on aina ilmainen ja saatavilla yli 70 kielellä.",
+    "about.foundationText": "Scratch-säätiö",
+    "about.introParents": "Tietoa vanhemmille",
+    "about.introEducators": "Tietoa opettajille",
+    "about.introLearnMore": "Lue lisää Scratch-säätiön sivustolta",
+    "about.support": "Tue Scratchia",
+    "about.supportDescription1": "Scratch on saatavilla ilmaiseksi {supportersLink} ansiosta.",
+    "about.supportDescription2": "Jokainen lahjoitettu euro antaa lapselle mahdollisuuden maksuttomaan, hauskaan ja luovuutta kehittävään oppimiseen Scratch-yhteisössä.",
+    "about.supportDescription3": "Auta meitä huolehtimaan siitä, että kaikki maailman lapset voivat luoda kuvittelemaansa.",
+    "about.supportersLinkText": "tukijoiden",
+    "about.donateButton": "Lahjoita"
+}

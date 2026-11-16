@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Scratch är världens största kodningsgemenskap för barn och ett programspråk med ett enkelt, visuellt gränssnitt som möjliggör att unga människor skapar digitala berättelser, spel och animationer. Scratch designas, utvecklas och modereras av {foundationLink}, en ej vinstdrivande organisation.",
+    "about.introTwo": "Scratch förespråkar systematiskt tänkande, problemlösning, kreativ undervisning och inlärning, möjligheten att kunna uttrycka sig själv, samarbete samt rättvisa i datorvärlden.",
+    "about.introThree": "Scratch är alltid gratis och finns på fler än 70 språk.",
+    "about.foundationText": "Scratchstiftelsen",
+    "about.introParents": "Info för föräldrar",
+    "about.introEducators": "Info för utbildare",
+    "about.introLearnMore": "Learn more at Scratch Foundation",
+    "about.support": "Support Scratch",
+    "about.supportDescription1": "Scratch is available for free, thanks to our {supportersLink}. This support helps us provide young people around the world with opportunities to imagine, create, and share.",
+    "about.supportDescription2": "Every dollar donated gives one child access to free, playful, and powerful creative learning through the Scratch community.",
+    "about.supportDescription3": "Join us in helping kids everywhere create what they imagine.",
+    "about.supportersLinkText": "supporters",
+    "about.donateButton": "Donera"
+}

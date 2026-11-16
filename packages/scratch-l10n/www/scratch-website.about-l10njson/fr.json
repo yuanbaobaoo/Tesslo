@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Scratch est la plus grande communauté de codage pour enfants au monde et un langage de codage doté d'une interface visuelle simple qui permet aux jeunes de créer des histoires, des jeux et des animations numériques. Scratch est conçu, développé et modéré par {foundationLink}, une organisation à but non lucratif.",
+    "about.introTwo": "Scratch favorise la pensée informatique et les compétences en matière de résolution de problèmes, l'enseignement et l'apprentissage créatifs, l'expression personnelle et la collaboration, ainsi que l'équité en informatique.",
+    "about.introThree": "Scratch est gratuit et est disponible en plus de 70 langues.",
+    "about.foundationText": "Scratch Foundation",
+    "about.introParents": "Infos pour les parents",
+    "about.introEducators": "Infos pour les éducateurs",
+    "about.introLearnMore": "En savoir plus sur la Scratch Foundation",
+    "about.support": "Soutenir Scratch",
+    "about.supportDescription1": "Scratch est disponible gratuitement grâce à notre {supportersLink}. Ce soutien nous aide à offrir aux jeunes du monde entier la possibilité d'imaginer, de créer et de partager.",
+    "about.supportDescription2": "Chaque dollar donné permet à un enfant d'accéder gratuitement à un apprentissage créatif, ludique et efficace grâce à la communauté Scratch.",
+    "about.supportDescription3": "Rejoignez-nous pour aider les enfants du monde entier à créer ce qu’ils imaginent.",
+    "about.supportersLinkText": "soutiens",
+    "about.donateButton": "Faire un don"
+}

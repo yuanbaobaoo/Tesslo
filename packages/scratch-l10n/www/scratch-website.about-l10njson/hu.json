@@ -1,0 +1,15 @@
+{
+    "about.introOne": "A Scratch a világ legnagyobb programozó közössége gyerekeknek és egy programozási nyelv vizuális felhasználói felülettel, ami fiatalok számára elérhetővé tesz digitális történeteket, játékokat és animációkat. A Scratch a {foundationLink} nonprofit szervezet által tervezett, fejlesztett és moderált.",
+    "about.introTwo": "A Scratch támogatja és fejleszti a számításos gondolkodást és a probléma megoldó készségeket; kreatív tanítást és tanulást; önkifejezést és együttműködést; és egyenjogúságot a számítástechnikában.",
+    "about.introThree": "A Scratch mindig ingyenes és több mint 70 nyelven elérhető.",
+    "about.foundationText": "Scratch Alapítvány",
+    "about.introParents": "Tudnivalók szülőknek",
+    "about.introEducators": "Tudnivalók oktatóknak",
+    "about.introLearnMore": "Learn more at Scratch Foundation",
+    "about.support": "Support Scratch",
+    "about.supportDescription1": "Scratch is available for free, thanks to our {supportersLink}. This support helps us provide young people around the world with opportunities to imagine, create, and share.",
+    "about.supportDescription2": "Every dollar donated gives one child access to free, playful, and powerful creative learning through the Scratch community.",
+    "about.supportDescription3": "Join us in helping kids everywhere create what they imagine.",
+    "about.supportersLinkText": "supporters",
+    "about.donateButton": "Adományozás"
+}

@@ -1,0 +1,95 @@
+/* 关于弹窗静态样式：单位用 rem/%（§9），仅阴影与 1px 描边保留 px */
+.tesslo-about-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+.tesslo-about-modal {
+    width: 26.25rem;
+    max-width: 86vw;
+    border-radius: 1rem;
+    overflow: hidden;
+    background-color: #fff;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+    font-family:
+        "Helvetica Neue", "Helvetica", "Arial", "PingFang SC", "Hiragino Sans GB",
+        "Microsoft YaHei", sans-serif;
+}
+
+.tesslo-about-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    background-color: #4c97ff;
+    color: #fff;
+    font-size: 0.9375rem;
+    font-weight: bold;
+}
+
+.tesslo-about-close {
+    width: 1.5rem;
+    height: 1.5rem;
+    line-height: 1.375rem;
+    text-align: center;
+    border-radius: 0.75rem;
+    border: none;
+    padding: 0;
+    background-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    font-size: 0.9375rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.tesslo-about-body {
+    padding: 1.75rem 1.5rem 1.25rem;
+    text-align: center;
+}
+
+.tesslo-about-logo {
+    max-width: 15rem;
+    width: 60%;
+    margin-bottom: 1.125rem;
+}
+
+.tesslo-about-title {
+    margin: 0 0 0.375rem;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #575e75;
+}
+
+.tesslo-about-version {
+    margin: 0 0 1.25rem;
+    font-size: 0.8125rem;
+    color: #9aa0b4;
+}
+
+.tesslo-about-link-row {
+    margin: 0 0 0.5rem;
+    font-size: 0.8125rem;
+    color: #575e75;
+    word-break: break-all;
+}
+
+.tesslo-about-link {
+    color: #4c97ff;
+    text-decoration: none;
+}
+
+.tesslo-about-footer {
+    padding: 0.625rem 1.25rem;
+    border-top: 1px solid #eceff4;
+    background-color: #fafbfc;
+    font-size: 0.75rem;
+    color: #9aa0b4;
+}

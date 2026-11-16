@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Scratchは、世界最大（せかいさいだい）の子ども向け（こどもむけ）コーディングコミュニティーで、若者（わかもの）がデジタルな物語（ものがたり）、ゲーム、アニメーションを作る（つくる）ために使って（つかって）いる、シンプルなビジュアルインターフェースを持った（もった）コーディング言語（げんご）です。Scratchは非営利団体（ひえいりだんたい）{foundationLink}によって設計（せっけい）、開発（かいはつ）、維持（いじ）されています。",
+    "about.introTwo": "Scratchは、計算論的思考（けいさんろんてきしこう）と問題解決（もんだいかいけつ）のスキル、創造的（そうぞうてき）な教育（きょういく）と学習（がくしゅう）、自己表現（じこひょうげん）と協調（きょうちょう）、そしてコンピュータ利用（りよう）における公平性（こうへいせい）を促進（そくしん）します。",
+    "about.introThree": "Scratchは完全に無料で、70以上の言語で利用可能です。",
+    "about.foundationText": "Scratchざいだん",
+    "about.introParents": "ほごしゃのみなさんへ",
+    "about.introEducators": "きょういくしゃのみなさんへ",
+    "about.introLearnMore": "Scratch財団でもっと知る",
+    "about.support": "Scratchを支援",
+    "about.supportDescription1": "Scratchは、{supportersLink}からの支援のおかげで、無料で提供されています。この支援のおかげで、私たちは世界中の子どもたちに想像し、創造し、共有する機会を提供できます。",
+    "about.supportDescription2": "1ドルの寄付で、1人の子どもがScratchコミュニティを通じて、無料で楽しく、パワフルな創造的学習にアクセスできるようになります。",
+    "about.supportDescription3": "世界中の子どもたちが想像したものを創造できるよう、私たちと一緒に手助けしませんか。",
+    "about.supportersLinkText": "サポーター",
+    "about.donateButton": "きふ"
+}

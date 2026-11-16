@@ -1,0 +1,15 @@
+{
+    "about.introOne": "Ang Scratch ay ang pinakamalaking coding community sa mundo para sa mga bata at isang coding language na may simpleng visual interface na nagbibigay-daan sa mga kabataan na lumikha ng mga digital na kwento, laro, at animation. Ang Scratch ay idinisenyo, binuo, at pinangangasiwaan ng ,{foundationLink} isang nonprofit na organisasyon.",
+    "about.introTwo": "Itinataguyod ng Scratch ang computational na pag-iisip at mga kasanayan sa paglutas ng problema; malikhaing pagtuturo at pagkatuto; pagpapahayag ng sarili at pakikipagtulungan; at katarungan sa computing.",
+    "about.introThree": "Laging libre ang Scratch at makukuha ito sa higit 70ng mga wika.",
+    "about.foundationText": "Scratch Foundation",
+    "about.introParents": "Info for parents",
+    "about.introEducators": "Info for educators",
+    "about.introLearnMore": "Learn more at Scratch Foundation",
+    "about.support": "Support Scratch",
+    "about.supportDescription1": "Scratch is available for free, thanks to our {supportersLink}. This support helps us provide young people around the world with opportunities to imagine, create, and share.",
+    "about.supportDescription2": "Every dollar donated gives one child access to free, playful, and powerful creative learning through the Scratch community.",
+    "about.supportDescription3": "Join us in helping kids everywhere create what they imagine.",
+    "about.supportersLinkText": "supporters",
+    "about.donateButton": "Mag-donate"
+}
