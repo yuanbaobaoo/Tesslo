@@ -45,8 +45,6 @@ SHA-256 锁定在 `scripts/toolchain.lock.json`。在 `.env` 显式声明路径�
 
 ## 仓库结构
 
-## 仓库结构
-
 ```text
 packages/
 ├── scratch-gui/ scratch-vm/ scratch-blocks/ scratch-render/ ...
