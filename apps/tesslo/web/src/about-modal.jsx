@@ -40,7 +40,7 @@ const AboutModal = ({logo, onRequestClose}) => (
           />
         ) : null}
         <h1 className="tesslo-about-title">Tesslo</h1>
-        <p className="tesslo-about-version">版本 0.1.0</p>
+        <p className="tesslo-about-version">版本 {__TESSLO_VERSION__}</p>
         <p className="tesslo-about-link-row">
           {'GitHub：'}
           <a

@@ -1,10 +1,15 @@
 // 离线编辑器的 webpack 构建：单页入口 + 把 scratch-gui 的静态资源原样拷进 dist，
 // 产物 dist/ 会被 build-hap 脚本整目录拷进 HAP 的 rawfile。
 const path = require('path');
+const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 
 // scratch-gui 包内已构建好的静态资源目录（static/libraries/chunks 等）
 const guiDist = path.dirname(require.resolve('@scratch/scratch-gui'));
+
+// 应用版本来自 apps/tesslo/package.json（发版时与根版本同步），
+// 打包时注入 About 弹窗，避免界面版本号再手工维护一份
+const appVersion = require('../package.json').version;
 
 module.exports = {
   mode: 'production',
@@ -45,6 +50,9 @@ module.exports = {
     extensions: ['.js', '.jsx']
   },
   plugins: [
+    new webpack.DefinePlugin({
+      __TESSLO_VERSION__: JSON.stringify(appVersion)
+    }),
     new CopyPlugin({
       patterns: [
         {from: path.resolve(__dirname, 'src/index.html'), to: 'index.html'},
