@@ -8,10 +8,10 @@ import JSON5 from 'json5';
 
 import { bundleName, devBundleName, mergeDevProduct, readDebugProfile } from '../scripts/ohos-common.ts';
 
-const appRoot = new URL('../apps/tesslo/', import.meta.url);
+const appRoot = new URL('../apps/host/ohos/', import.meta.url);
 
 /**
- * 读取 apps/tesslo 下的 JSON5 配置。
+ * 读取 apps/host/ohos 下的 JSON5 配置。
  */
 const readJson5 = relative => JSON5.parse(fs.readFileSync(new URL(relative, appRoot), 'utf8'));
 

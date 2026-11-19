@@ -83,7 +83,7 @@ loadDotEnv('.env');
 loadDotEnv('.env.toolchain');
 
 // HAP 工程根（hvigor 工作目录）
-export const appRoot = path.join(repoRoot, 'apps/tesslo');
+export const appRoot = path.join(repoRoot, 'apps/host/ohos');
 export const hapRoot = appRoot;
 // 离线编辑器源码与 webpack 产物
 export const webRoot = path.join(appRoot, 'web');
@@ -370,7 +370,7 @@ function linkOrCopy(source: string, target: string): void {
 
 // 把离线素材以硬链接方式铺进 rawfile：不产生第二份数据。
 // rawfile 在 hvigor 打包期间只读；不要在 rawfile 内原地修改素材，
-// 否则硬链接会同时改到 apps/tesslo/assets/fetched 的源文件。
+// 否则硬链接会同时改到 apps/host/ohos/assets/fetched 的源文件。
 function linkDir(source: string, target: string): void {
   fs.mkdirSync(target, {recursive: true});
   for (const entry of fs.readdirSync(source, {withFileTypes: true})) {
@@ -401,6 +401,11 @@ export function ensureEditorBuild({build = false}: {build?: boolean} = {}): void
   if (build || !fs.existsSync(path.join(webDist, 'index.html'))) {
     runPnpm(['build:editor']);
     runPnpm(['build:web']);
+  } else {
+    // 复用已有 web/dist 时明确告警：源码改动不会自动生效（传 --build 强制重建）。
+    // 2026-11-18 教训：dev:ohos 默认复用 dist，多次"部署验证"实际跑旧包，
+    // 导致回归结论失真（Blocks ref 回归被漏检）。
+    console.warn('[ohos] reusing existing web/dist — source changes are NOT included; pass --build to rebuild');
   }
   if (!fs.existsSync(path.join(webDist, 'index.html'))) {
     throw new Error('web editor bundle is missing; run pnpm build:web');
@@ -418,7 +423,7 @@ export function stageWebPayload(): void {
   if (fs.existsSync(mediaFetched)) {
     linkDir(mediaFetched, path.join(rawfileRoot, 'static/fetched'));
   } else {
-    console.warn('[ohos] apps/tesslo/assets/fetched is missing; the offline library will be empty');
+    console.warn('[ohos] apps/host/ohos/assets/fetched is missing; the offline library will be empty');
   }
   removeMaps(rawfileRoot);
 }

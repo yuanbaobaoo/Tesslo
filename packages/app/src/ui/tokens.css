@@ -1,0 +1,63 @@
+/* Tesslo 设计令牌：对齐 Scratch 设计语言（scratch-gui css/colors.css + units.css）。
+   自研 UI（工作台导航条 / 作品列表 / 弹窗）统一引用本文件，不散写颜色。
+   响应式断点约定（媒体查询）：
+   - 窄屏 < 640px：单列布局、压缩内边距
+   - 中屏 640–1024px：双列/自适应网格
+   - 宽屏 > 1024px：完整布局 */
+:root {
+    /* —— 颜色（Scratch tokens） —— */
+    --t-ui-primary: #e5f0ff;
+    --t-ui-secondary: #e9f1fc;
+    --t-ui-tertiary: #d9e3f2;
+    --t-ui-white: #ffffff;
+    --t-ui-black-transparent: rgba(0, 0, 0, 0.15);
+    --t-ui-black-transparent-10: rgba(0, 0, 0, 0.1);
+    --t-ui-modal-overlay: hsla(215, 100%, 65%, 0.9);
+    --t-ui-alert-overlay: hsla(215, 100%, 65%, 0.4);
+
+    /* 主色：菜单栏用 looks-secondary（紫），主按钮用 motion-primary（蓝） */
+    --t-looks-secondary: #855cd6;
+    --t-looks-secondary-dark: #714eb6;
+    --t-motion-primary: #4c97ff;
+    --t-motion-tertiary: #3373cc;
+    --t-text-primary: #575e75;
+    --t-text-primary-transparent: rgba(87, 94, 117, 0.75);
+    --t-red-primary: #ff661a;
+    --t-error-primary: #ff8c1a;
+
+    /* —— 字号/字体（Scratch menu-bar 与 modal 同族） —— */
+    --t-font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC',
+        'HarmonyOS Sans SC', 'Microsoft YaHei', sans-serif;
+    --t-font-size-sm: 0.75rem;
+    --t-font-size-md: 0.875rem;
+    --t-font-size-lg: 1rem;
+    --t-font-size-xl: 1.25rem;
+
+    /* —— 圆角/间距/阴影（Scratch: $form-radius = $space/2 = 4px） —— */
+    --t-radius: 0.25rem;
+    --t-radius-lg: 0.5rem;
+    --t-space: 0.5rem;
+    --t-space-lg: 1rem;
+    --t-shadow-card: 0 0 0 1px var(--t-ui-black-transparent);
+    --t-shadow-pop: 0 0.25rem 1rem rgba(20, 30, 45, 0.18);
+
+    /* —— 尺寸：顶栏高度对齐 Scratch $menu-bar-height = 3rem（48px）；
+       栏内项 2.5rem（40px，用户要求紧凑），工具栏外触屏目标仍 ≥48px，
+       独立触摸项（卡片/弹窗按钮）另行保证 —— */
+    --t-menu-bar-height: 3rem;
+    --t-touch-target: 2.5rem;
+    --t-page-padding: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+/* 顶栏文字标识（chrome 栏用；图片 logo 在紫底经滤镜会变白块，故用文字） */
+.tesslo-wordmark {
+    font-weight: 800;
+    font-size: var(--t-font-size-md);
+    letter-spacing: 0.14em;
+    color: var(--t-ui-white);
+    white-space: nowrap;
+}
+
+.tesslo-wordmark-lg {
+    font-size: var(--t-font-size-lg);
+}

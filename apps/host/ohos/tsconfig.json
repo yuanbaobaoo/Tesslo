@@ -1,0 +1,7 @@
+{
+    "extends": "../../../tsconfig.base.json",
+    "compilerOptions": {
+        "allowImportingTsExtensions": true
+    },
+    "include": ["hvigorfile.ts", "web/src/**/*.ts", "web/src/**/*.tsx"]
+}

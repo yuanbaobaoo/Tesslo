@@ -97,6 +97,7 @@ pnpm dev:ohos -- --device <serial>   # 安装到设备并启动
 | [构建与打包](docs/build.md) | pnpm 脚本、HAP 结构、签名与离线构建 |
 | [发布签名](docs/release-signing.md) | 上架签名材料、流程、安全模型与排查 |
 | [真机验证](docs/device-testing.md) | 安装、日志、Link 与模拟外设验证 |
+| [迭代路线图](docs/roadmap.md) | 差异化方向、技术方案与版本节奏 |
 
 ## 许可
 

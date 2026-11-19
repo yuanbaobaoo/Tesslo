@@ -1,0 +1,495 @@
+/* Tesslo 作品列表（Launcher）：对齐 Scratch 设计语言。
+   顶栏 = Scratch menu-bar（紫 #855CD6 / 白字 / Helvetica），
+   内容区用 Scratch 编辑器底色（--t-ui-primary），卡片白底 + 1px 描边阴影。 */
+@import '../ui/tokens.css';
+
+.tesslo-launcher {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--t-ui-primary);
+    color: var(--t-text-primary);
+    font-family: var(--t-font-family);
+}
+
+/* —— 顶栏（Scratch menu-bar 风格） —— */
+.tesslo-launcher-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-height: var(--t-menu-bar-height);
+    padding: 0.125rem var(--t-page-padding);
+    background-color: var(--t-looks-secondary);
+    color: var(--t-ui-white);
+    box-shadow: 0 0.125rem 0.25rem var(--t-ui-black-transparent-10);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.tesslo-launcher-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.tesslo-launcher-logo {
+    /* 用户提供的 logo（白+橙 wordmark，透明确认过）：原色直接用于紫底，不加滤镜 */
+    height: 1.75rem;
+    width: auto;
+    object-fit: contain;
+}
+
+.tesslo-launcher-brand h1 {
+    margin: 0;
+    font-size: var(--t-font-size-lg);
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tesslo-launcher-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+/* 顶栏按钮：透明菜单项（Scratch menu-bar-item），主操作白色实心 */
+.tesslo-launcher-button {
+    min-height: var(--t-touch-target);
+    padding: 0 0.875rem;
+    border: none;
+    border-radius: var(--t-radius);
+    background: transparent;
+    color: var(--t-ui-white);
+    font-family: var(--t-font-family);
+    font-size: var(--t-font-size-md);
+    cursor: pointer;
+}
+
+.tesslo-launcher-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.tesslo-launcher-button[disabled] {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.tesslo-launcher-button-primary {
+    background: var(--t-ui-white);
+    color: var(--t-looks-secondary);
+    font-weight: bold;
+}
+
+.tesslo-launcher-button-primary:hover {
+    background: var(--t-ui-secondary);
+}
+
+/* —— 作品网格（自适应列宽） —— */
+.tesslo-launcher-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(clamp(13rem, 21vw, 17rem), 1fr));
+    gap: clamp(0.875rem, 1.8vw, 1.375rem);
+    padding: var(--t-page-padding);
+    align-content: start;
+}
+
+.tesslo-launcher-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--t-text-primary-transparent);
+    font-size: var(--t-font-size-md);
+    padding: clamp(2rem, 12vh, 5rem) 1rem;
+}
+
+.tesslo-launcher-empty p {
+    margin: 0.35rem 0;
+}
+
+/* —— 作品卡片 —— */
+.tesslo-launcher-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--t-ui-white);
+    border-radius: 0.75rem;
+    box-shadow:
+        0 0.0625rem 0.125rem rgba(22, 33, 54, 0.05),
+        0 0.25rem 0.75rem rgba(22, 33, 54, 0.06),
+        0 0 0 1px rgba(22, 33, 54, 0.04);
+    /* 不裁剪：保留圆角由子元素处理（避免 tooltip/浮层被裁掉） */
+    overflow: visible;
+    transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.tesslo-launcher-card.is-missing {
+    opacity: 0.65;
+}
+
+.tesslo-launcher-card-open {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0.75rem 0.75rem 0 0;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    min-height: var(--t-touch-target);
+}
+
+.tesslo-launcher-card-open:active {
+    background: #f5f8fd;
+}
+
+.tesslo-launcher-card-thumb {
+    aspect-ratio: 16 / 9;
+    background:
+        radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.9), transparent 55%),
+        linear-gradient(135deg, #f4f7ff 0%, #e8effc 55%, #e5ebfa 100%);
+    border-radius: 0.75rem 0.75rem 0 0;
+    display: block;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 真实封面：舞台截图（object-fit 裁切铺满） */
+.tesslo-launcher-card-thumb-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 无封面时的兜底：项目名首字（不再用网格占位） */
+.tesslo-launcher-card-cover {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(2.25rem, 6vw, 3.25rem);
+    font-weight: 800;
+    color: rgba(133, 92, 214, 0.3);
+    user-select: none;
+}
+
+/* 收藏状态徽标（只展示状态，操作在"更多"菜单里） */
+.tesslo-launcher-card-fav {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.15rem 0.5rem 0.15rem 0.4rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--t-looks-secondary);
+    font-size: 0.6875rem;
+    font-weight: bold;
+    box-shadow: 0 0.0625rem 0.25rem rgba(22, 33, 54, 0.16);
+}
+
+/* 打开提示：仅精细指针（鼠标）hover 时显示，触屏不依赖它 */
+.tesslo-launcher-card-open-hint {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 1;
+    transform: translate(-50%, -50%);
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(87, 94, 117, 0.86);
+    color: var(--t-ui-white);
+    font-size: 0.8125rem;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+}
+
+.tesslo-launcher-card-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.625rem 0.75rem 0 0.875rem;
+}
+
+.tesslo-launcher-card-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.9375rem;
+    font-weight: bold;
+    color: var(--t-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 进入指示：轻量右箭头（不额外放按钮） */
+.tesslo-launcher-card-chevron {
+    flex: 0 0 auto;
+    display: inline-flex;
+    color: #c3cad8;
+}
+
+.tesslo-launcher-card-meta {
+    padding: 0.188rem 0.875rem 0.75rem;
+    font-size: 0.75rem;
+    color: var(--t-text-primary-transparent);
+}
+
+/* —— 卡片工具栏：卡片本身即"打开"，这里只放轻量操作 —— */
+.tesslo-launcher-card-actions {
+    display: flex;
+    gap: 0.125rem;
+    padding: 0.375rem 0.625rem 0.5rem;
+    border-top: 1px solid #f2f5fa;
+    border-radius: 0 0 0.75rem 0.75rem;
+    background: var(--t-ui-white);
+}
+
+.tesslo-card-link {
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    min-width: 0;
+    min-height: 2.5rem;
+    padding: 0 0.25rem;
+    border: none;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--t-text-primary);
+    font-family: var(--t-font-family);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* 缺失项目只保留"更多"：不铺满整行 */
+.tesslo-card-link.is-single {
+    flex: 0 1 auto;
+    margin-left: auto;
+    padding: 0 0.75rem;
+}
+
+.tesslo-card-link svg {
+    flex: 0 0 auto;
+    color: var(--t-text-primary-transparent);
+    transition: color 0.15s ease;
+}
+
+.tesslo-card-link:hover {
+    background: #f4f7fb;
+    color: var(--t-motion-tertiary);
+}
+
+.tesslo-card-link:hover svg {
+    color: var(--t-motion-tertiary);
+}
+
+.tesslo-card-link:disabled {
+    opacity: 0.5;
+    cursor: default;
+    background: transparent;
+}
+
+/* —— 精细指针（鼠标/触控板）：hover 增强 —— */
+@media (hover: hover) and (pointer: fine) {
+    .tesslo-launcher-card:hover {
+        box-shadow:
+            0 0.125rem 0.25rem rgba(22, 33, 54, 0.07),
+            0 0.75rem 1.5rem rgba(22, 33, 54, 0.12),
+            0 0 0 1px rgba(22, 33, 54, 0.04);
+        transform: translateY(-3px);
+    }
+
+    .tesslo-launcher-card:hover .tesslo-launcher-card-open-hint {
+        opacity: 1;
+    }
+
+    .tesslo-launcher-card:hover .tesslo-launcher-card-open {
+        background: #fbfcff;
+    }
+}
+
+/* —— 触屏 / 窄屏：更大的操作目标 —— */
+@media (hover: none), (pointer: coarse), (max-width: 720px) {
+    .tesslo-card-link {
+        min-height: 3rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* —— "更多"菜单：PC 锚定下拉 / 触屏底部动作面板 —— */
+.tesslo-card-menu-layer {
+    font-family: var(--t-font-family);
+}
+
+.tesslo-card-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 950;
+    background: transparent;
+}
+
+.tesslo-card-menu-backdrop.is-sheet {
+    background: rgba(20, 30, 45, 0.35);
+}
+
+.tesslo-card-menu {
+    z-index: 951;
+    background: var(--t-ui-white);
+    color: var(--t-text-primary);
+    box-shadow: var(--t-shadow-pop);
+}
+
+.tesslo-card-menu.is-dropdown {
+    position: fixed;
+    width: 12.5rem;
+    padding: 0.3rem;
+    border-radius: var(--t-radius-lg);
+}
+
+.tesslo-card-menu.is-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0.5rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom));
+    border-radius: var(--t-radius-lg) var(--t-radius-lg) 0 0;
+    animation: tesslo-sheet-rise 0.18s ease-out;
+}
+
+@keyframes tesslo-sheet-rise {
+    from {
+        transform: translateY(1.5rem);
+        opacity: 0.6;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.tesslo-card-menu-handle {
+    display: block;
+    width: 2.5rem;
+    height: 0.3rem;
+    margin: 0.15rem auto 0.35rem;
+    border-radius: 999px;
+    background: var(--t-ui-tertiary);
+}
+
+.tesslo-card-menu-title {
+    padding: 0.15rem 0.5rem 0.5rem;
+    font-size: var(--t-font-size-sm);
+    font-weight: bold;
+    color: var(--t-text-primary-transparent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tesslo-card-menu-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.tesslo-card-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    min-height: 3rem;
+    padding: 0 0.75rem;
+    border: none;
+    border-radius: var(--t-radius);
+    background: transparent;
+    color: var(--t-text-primary);
+    font-family: var(--t-font-family);
+    font-size: var(--t-font-size-md);
+    text-align: left;
+    cursor: pointer;
+}
+
+.tesslo-card-menu-item:hover,
+.tesslo-card-menu-item:focus-visible {
+    background: var(--t-ui-secondary);
+    outline: none;
+}
+
+.tesslo-card-menu-item.is-danger {
+    color: #d93025;
+}
+
+.tesslo-card-menu-item.is-danger:hover {
+    background: #fdecea;
+}
+
+.tesslo-card-menu-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    color: var(--t-text-primary-transparent);
+}
+
+.tesslo-card-menu-icon svg {
+    display: block;
+}
+
+.tesslo-card-menu-item.is-danger .tesslo-card-menu-icon {
+    color: inherit;
+}
+
+/* —— 页脚 —— */
+.tesslo-launcher-footer {
+    padding: 0.5rem var(--t-page-padding) 0.75rem;
+    color: var(--t-text-primary-transparent);
+    font-size: var(--t-font-size-sm);
+}
+
+.tesslo-hidden-input {
+    display: none;
+}
+
+/* —— 响应式 —— */
+@media (max-width: 640px) {
+    .tesslo-launcher-header {
+        padding: 0.25rem 0.5rem;
+    }
+
+    .tesslo-launcher-brand h1 {
+        font-size: var(--t-font-size-md);
+    }
+
+    .tesslo-launcher-actions .tesslo-launcher-button {
+        padding: 0 0.625rem;
+        font-size: var(--t-font-size-sm);
+    }
+
+    .tesslo-launcher-grid {
+        grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    }
+}

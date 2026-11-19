@@ -1,0 +1,19 @@
+/* 播放端全屏自适应：单文件 HTML 双击即玩 */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+}
+
+#app {
+    width: 100vw;
+    height: 100vh;
+}
+
+/* 舞台居中（播放模式无编辑器 chrome） */
+#app [class*='gui_stage-wrapper'] {
+    margin: 0 auto;
+}

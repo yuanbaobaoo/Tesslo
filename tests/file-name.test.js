@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { sanitizeFileName } from '../apps/tesslo/entry/src/main/ets/common/FileName.ts';
+import { sanitizeFileName } from '../apps/host/ohos/entry/src/main/ets/common/FileName.ts';
 
 test('keeps a normal sb3 file name', () => {
   assert.equal(sanitizeFileName('Scratch作品.sb3'), 'Scratch作品.sb3');

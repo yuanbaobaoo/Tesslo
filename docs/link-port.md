@@ -36,7 +36,7 @@ libssl_ohos.so        runtime pack 自带的 OpenSSL 1.1.1w（精简构建）
 ```
 
 以上与 `libc++_shared.so` 一起部署到
-`apps/tesslo/entry/libs/arm64-v8a/`。
+`apps/host/ohos/entry/libs/arm64-v8a/`。
 
 同步上游：`git fetch scratch-link && git merge -Xsubtree=packages/scratch-link scratch-link/main`。
 

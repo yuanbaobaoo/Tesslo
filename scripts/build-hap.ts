@@ -36,6 +36,9 @@ try {
   run(process.execPath, ['scripts/env.ts', 'ensure', '--for', mode], {cwd: repoRoot});
   runPnpm(['build:editor']);
   runPnpm(['build:web']);
+  // 播放端产物（player.js + 模板内联）必须在打包前生成：导出 HTML 依赖
+  // rawfile 里的 player-template.html；放 build:web 之后避免被其输出覆盖
+  runPnpm(['build:player']);
   runPnpm(['build:link:csharp']);
   const {artifact} = buildPackage({build: args.has('--build'), signed, mode, product, resign: args.has('--resign')});
   console.log(artifact);

@@ -1,0 +1,16 @@
+{
+  "name": "@tesslo/formats",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "description": "Tesslo project formats: .tess container codec and .sb3 interop (docs/plans/P1-works.md)",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "jszip": "3.10.1"
+  }
+}

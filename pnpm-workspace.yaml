@@ -1,5 +1,10 @@
 packages:
+  # 产品层域包（app/state/ui/formats/extensions/platform-adapter）与 scratch-link
   - "packages/*"
+  # 三原生壳：ohos = HarmonyOS HAP 工程(workspace 包)；android/ios 暂为规划文档
+  - "apps/host/*"
+  # 兼容引擎：绞杀者收缩区，包名与 import 不变，仅目录归组（D7）
+  - "packages/engine/scratch/*"
   - "apps/*"
 
 nodeLinker: isolated

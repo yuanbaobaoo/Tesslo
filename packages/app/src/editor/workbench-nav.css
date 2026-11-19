@@ -1,0 +1,225 @@
+/* Tesslo 工作台导航条：Scratch menu-bar 视觉（紫底白字、Helvetica、紧凑菜单项）。
+   右侧动作：设置（下拉）/ 保存项目 / 导出项目，最右：关于。 */
+@import '../ui/tokens.css';
+
+.tesslo-nav {
+    position: relative;
+    z-index: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--t-menu-bar-height);
+    padding: 0.125rem clamp(0.5rem, 1.6vw, 1rem);
+    /* 轻微纵向渐变让紫底更有层次；文字统一加粗一档，避免系统字体发虚 */
+    background: linear-gradient(180deg, #8f68e1 0%, #855cd6 55%, #7d53cf 100%);
+    color: var(--t-ui-white);
+    font-family: var(--t-font-family);
+    box-shadow:
+        0 0.125rem 0.375rem rgba(49, 28, 92, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.tesslo-nav-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    flex: 0 1 auto;
+}
+
+/* logo：用户 logo（白+橙）原色用于紫底 */
+.tesslo-nav-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--t-touch-target);
+    height: var(--t-touch-target);
+    padding: 0 0.375rem;
+    border: none;
+    border-radius: var(--t-radius);
+    background: transparent;
+    cursor: pointer;
+    color: var(--t-ui-white);
+    font-weight: bold;
+    letter-spacing: 0.06em;
+}
+
+.tesslo-nav-logo img {
+    height: 1.75rem;
+    width: auto;
+    display: block;
+}
+
+.tesslo-nav-logo:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.tesslo-nav-title {
+    margin-left: 0.125rem;
+    padding-left: 0.75rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.24);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--t-ui-white);
+    max-width: min(32vw, 18rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tesslo-nav-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* 菜单项按钮（Scratch menu-bar-item：透明 + 白色 hover 蒙层） */
+.tesslo-nav-btn {
+    min-height: var(--t-touch-target);
+    padding: 0 0.75rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--t-ui-white);
+    font-family: var(--t-font-family);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tesslo-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.tesslo-nav-btn:active {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.tesslo-nav-btn.is-active {
+    background: rgba(255, 255, 255, 0.24);
+}
+
+/* 主操作（保存）：描边实心块，在三个文字动作里形成明确层级 */
+.tesslo-nav-btn-primary {
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.tesslo-nav-btn-primary:hover {
+    background: rgba(255, 255, 255, 0.24);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+}
+
+.tesslo-nav-btn[disabled] {
+    opacity: 0.7;
+    cursor: default;
+}
+
+.tesslo-nav-about {
+    min-height: var(--t-touch-target);
+    padding: 0 0.75rem;
+    margin-left: 0.25rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.9);
+    font-family: var(--t-font-family);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tesslo-nav-about:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: var(--t-ui-white);
+}
+
+/* —— 设置浮层（Scratch 下拉菜单观感：白底 + 描边阴影 + 4px 圆角） —— */
+.tesslo-nav-settings {
+    position: relative;
+}
+
+.tesslo-nav-panel {
+    position: absolute;
+    top: calc(100% + 0.375rem);
+    right: 0;
+    width: 13.75rem;
+    padding: 0.375rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    background-color: var(--t-ui-white);
+    border-radius: var(--t-radius-lg);
+    box-shadow: var(--t-shadow-pop);
+    color: var(--t-text-primary);
+}
+
+.tesslo-nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding: 0.125rem 0;
+}
+
+.tesslo-nav-group + .tesslo-nav-group {
+    border-top: 1px solid var(--t-ui-secondary);
+    padding-top: 0.375rem;
+}
+
+.tesslo-nav-group-title {
+    padding: 0.125rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--t-text-primary-transparent);
+}
+
+.tesslo-nav-option {
+    min-height: 2.25rem;
+    padding: 0 0.5rem;
+    border: none;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--t-text-primary);
+    font-family: var(--t-font-family);
+    font-size: var(--t-font-size-md);
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+}
+
+.tesslo-nav-option:hover {
+    background: var(--t-ui-secondary);
+}
+
+.tesslo-nav-option.is-checked {
+    background: var(--t-ui-primary);
+    color: var(--t-motion-tertiary);
+    font-weight: 600;
+}
+
+/* —— 响应式 —— */
+@media (max-width: 720px) {
+    .tesslo-nav-title {
+        max-width: 24vw;
+    }
+
+    .tesslo-nav-btn,
+    .tesslo-nav-about {
+        padding: 0 0.625rem;
+        font-size: var(--t-font-size-sm);
+    }
+}
+
+@media (max-width: 520px) {
+    /* 极窄屏：动作按钮只留文字核心，隐藏作品名避免挤压 */
+    .tesslo-nav-title {
+        display: none;
+    }
+}

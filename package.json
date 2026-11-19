@@ -22,13 +22,20 @@
     "build:l10n": "pnpm --filter scratch-l10n build",
     "build:paint": "pnpm --filter scratch-paint build",
     "build:gui": "pnpm --filter @scratch/scratch-gui run clean && pnpm --filter @scratch/scratch-gui run build:dist",
-    "build:web": "pnpm --filter @tesslo/app build:web",
+    "build:web": "pnpm --filter @tesslo/hap build:web",
+    "build:player": "node scripts/trim-player-locales.mts && pnpm --filter @scratch/scratch-gui run build:dist-player && pnpm --filter @tesslo/hap build:player && node scripts/inline-player-template.mts",
+    "lint": "eslint . && eslint -c eslint.config.engine.mjs packages/engine/scratch",
+    "lint:product": "eslint packages apps/host/ohos/web/src",
+    "lint:engine": "eslint -c eslint.config.engine.mjs packages/engine/scratch",
     "build:link:csharp": "node scripts/env.ts ensure --for link && node scripts/build-link-csharp.ts",
     "build:hap": "node scripts/build-hap.ts",
     "build:app": "node scripts/build-hap.ts --app --product release",
     "dev:ohos": "node scripts/env.ts ensure --for signed && node scripts/dev-ohos.ts",
     "typecheck:scripts": "tsc -p scripts",
-    "test": "pnpm typecheck:scripts && pnpm test:link",
+    "typecheck:product": "tsc -p packages/platform-adapter && tsc -p packages/formats && tsc -p packages/state && tsc -p packages/app",
+    "test": "pnpm typecheck:scripts && pnpm test:product && pnpm test:compat && pnpm test:link",
+    "test:product": "node --test packages/formats/test/*.test.ts packages/platform-adapter/test/*.test.ts packages/app/test/*.test.ts",
+    "test:compat": "node --test tests/compat-roundtrip.test.ts tests/compat-matrix.test.ts",
     "test:link": "node --test packages/scratch-link/test/*.test.js tests/*.test.js"
   },
   "engines": {
@@ -37,7 +44,11 @@
   "devDependencies": {
     "@deveco/deveco-cli": "1.3.0-stable",
     "@types/node": "^22.0.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-boundaries": "^5.4.0",
+    "globals": "^17.14.0",
     "json5": "^2.2.3",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.58.2"
   }
 }

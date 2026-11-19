@@ -32,7 +32,7 @@ Windows 真机验证**；两点已知限制：.NET SDK 在 Windows 不自动安�
 | .NET SDK 9.0.104 | `pnpm install` 自愈下载（微软官方 CDN），或本机已有 | C# Link 与 NativeAOT |
 | ohos-net runtime pack | `pnpm install` 自愈下载（Release `tools`） | NativeAOT 目标运行库 |
 | devecocli | workspace devDependency，随 pnpm install | dev 身份调试签名材料生成 |
-| `apps/tesslo/assets/fetched/` | 已入库 | 离线素材库（无需联网） |
+| `apps/host/ohos/assets/fetched/` | 已入库 | 离线素材库（无需联网） |
 
 CLT 分卷托管在 GitCode [`ohos-tools` v26.0](https://gitcode.com/yuanbaobaoo/ohos-tools/releases/v26.0)
 （国内 CDN 直连），runtime pack 托管在本仓 GitHub Release
@@ -121,18 +121,18 @@ OHOS Native SDK（`OHOS_SDK_ROOT`，或 CLT 根推导）。
 2. 部署 `entry/libs/arm64-v8a/` 的 C# Link `.so`（`build:link:csharp`；直接调脚本
    且 `.so` 已存在时跳过）。
 3. 复制 `web/dist` 到 `entry/src/main/resources/rawfile`。
-4. 把 `apps/tesslo/assets/fetched` 以硬链接铺到 `rawfile/static/fetched`
+4. 把 `apps/host/ohos/assets/fetched` 以硬链接铺到 `rawfile/static/fetched`
    （不支持硬链接的文件系统回退为复制）。
 5. 运行 hvigor `assembleHap`（HAP）或 `assembleApp`（App 包）。
 
 输出：
 
 ```text
-apps/tesslo/entry/build/default/outputs/default/
+apps/host/ohos/entry/build/default/outputs/default/
   entry-default-unsigned.hap（正式包名，未签名）
-apps/tesslo/entry/build/dev/outputs/dev/
+apps/host/ohos/entry/build/dev/outputs/dev/
   entry-dev-signed.hap（dev 身份，build:hap --signed / dev:ohos）
-apps/tesslo/build/outputs/<product>/
+apps/host/ohos/build/outputs/<product>/
   entry-default-unsigned.app（default，CI）/ entry-*-signed.app（release，上架）
 ```
 
@@ -230,11 +230,11 @@ build-profile.json5）。签名材料在 `build-profile.json5` 的 signingConfig
      `signingConfig: 'release',` 一行。
   4. `pnpm build:app`：开头校验 product 已声明（缺失立刻报错，不进长构建）
      → 全链构建 → hvigor 以 `-p product=release -p buildMode=release` 打包
-     （不改写任何文件）；产物 `apps/tesslo/build/outputs/release/*-signed.app`
+     （不改写任何文件）；产物 `apps/host/ohos/build/outputs/release/*-signed.app`
      直接上传 AGC。
 
 `pnpm build:app` 默认 release 模式 + 上架签名：构建期间临时把 product 指向
-`release` 签名配置、结束后还原；产物 `apps/tesslo/build/outputs/default/*-signed.app`
+`release` 签名配置、结束后还原；产物 `apps/host/ohos/build/outputs/default/*-signed.app`
 直接上传 AGC。`pnpm build:hap --signed` 与 `pnpm dev:ohos` 用 dev 身份的调试签名装真机
 调试，不覆盖设备上的正式版。
 `build-profile.json5` 与 `*.local` 文件都不提交。
@@ -248,7 +248,7 @@ pnpm install --offline --store-dir <local-store>
 pnpm build:hap
 ```
 
-构建过程不访问任何素材 CDN 或上游 GitHub 仓库；`apps/tesslo/assets/fetched`
+构建过程不访问任何素材 CDN 或上游 GitHub 仓库；`apps/host/ohos/assets/fetched`
 的 1328 个素材已随仓库提交，checkout 后即可离线构建。工具链自愈下载需要网络；
 完全离线时用 `.env` 显式声明各组件路径（声明后不联网），或
 `TESSLO_BOOTSTRAP=off` 跳过检测。

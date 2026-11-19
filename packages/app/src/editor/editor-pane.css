@@ -1,0 +1,22 @@
+/* Tesslo 工作台布局：自绘导航条 + Scratch 工作区（flex 撑满）。 */
+@import '../ui/tokens.css';
+.tesslo-workbench-host {
+    position: fixed;
+    inset: 0;
+    background: var(--t-ui-primary);
+}
+
+.tesslo-workbench {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--t-ui-primary);
+    font-family: var(--t-font-family);
+}
+
+.tesslo-editor-gui {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+}

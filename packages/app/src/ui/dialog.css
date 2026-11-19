@@ -1,0 +1,361 @@
+/* Tesslo 弹窗（PromptDialog / ExportDialog / SnapshotsDialog 共用）：
+   对齐 Scratch modal 风格——蓝色半透明遮罩 + 白色内容 + 4px 白描边 + 0.5rem 圆角。 */
+@import './tokens.css';
+
+.tesslo-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(0.75rem, 3vw, 1.5rem);
+    background-color: var(--t-ui-modal-overlay);
+    font-family: var(--t-font-family);
+    color: var(--t-text-primary);
+}
+
+.tesslo-dialog {
+    width: min(36rem, 100%);
+    max-height: min(85vh, 40rem);
+    overflow-y: auto;
+    box-sizing: border-box;
+    background-color: var(--t-ui-white);
+    border: none;
+    border-radius: var(--t-radius-lg);
+    box-shadow: 0 0.5rem 2rem rgba(20, 30, 45, 0.25);
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.tesslo-dialog-title {
+    margin: 0 0 0.75rem;
+    font-size: var(--t-font-size-lg);
+    font-weight: bold;
+    color: var(--t-text-primary);
+}
+
+.tesslo-dialog-message {
+    margin: 0.25rem 0;
+    font-size: var(--t-font-size-md);
+    line-height: 1.4;
+    color: var(--t-text-primary-transparent);
+}
+
+/* —— 输入框 —— */
+.tesslo-dialog-input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: var(--t-touch-target);
+    margin-top: 0.75rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--t-ui-tertiary);
+    border-radius: var(--t-radius);
+    background: var(--t-ui-white);
+    font-family: var(--t-font-family);
+    font-size: var(--t-font-size-md);
+    color: var(--t-text-primary);
+}
+
+.tesslo-dialog-input:focus {
+    outline: none;
+    border-color: var(--t-motion-primary);
+    box-shadow: 0 0 0 1px var(--t-motion-primary);
+}
+
+.tesslo-dialog-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    min-height: var(--t-touch-target);
+    font-size: var(--t-font-size-md);
+    color: var(--t-text-primary);
+}
+
+/* —— 操作按钮 —— */
+.tesslo-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.tesslo-dialog-button {
+    min-height: 2.5rem;
+    padding: 0 1rem;
+    border: none;
+    border-radius: var(--t-radius);
+    background: var(--t-ui-tertiary);
+    color: var(--t-text-primary);
+    font-family: var(--t-font-family);
+    font-size: var(--t-font-size-md);
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.tesslo-dialog-button:hover {
+    background: var(--t-ui-secondary);
+}
+
+.tesslo-dialog-button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.tesslo-dialog-button-primary {
+    background: var(--t-motion-primary);
+    color: var(--t-ui-white);
+}
+
+.tesslo-dialog-button-primary:hover {
+    background: var(--t-motion-tertiary);
+}
+
+.tesslo-dialog-button-danger {
+    background: var(--t-red-primary);
+    color: var(--t-ui-white);
+}
+
+.tesslo-dialog-button-danger:hover {
+    background: #e64d00;
+}
+
+/* —— 导出格式三选一 —— */
+.tesslo-export-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.tesslo-export-option {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    padding: 0.75rem 1rem;
+    min-height: var(--t-touch-target);
+    background: var(--t-ui-secondary);
+    border: 1px solid transparent;
+    border-radius: var(--t-radius-lg);
+    text-align: left;
+    font-weight: normal;
+}
+
+.tesslo-export-option:hover {
+    background: var(--t-ui-primary);
+    border-color: var(--t-motion-primary);
+}
+
+.tesslo-export-option-name {
+    font-size: var(--t-font-size-md);
+    font-weight: bold;
+    color: var(--t-text-primary);
+}
+
+.tesslo-export-option-desc {
+    font-size: var(--t-font-size-sm);
+    color: var(--t-text-primary-transparent);
+}
+
+/* 导出准备中：给宿主组装/系统保存选择器留出可见反馈 */
+.tesslo-export-busy {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0;
+    font-size: var(--t-font-size-sm);
+    font-weight: 600;
+    color: var(--t-text-primary);
+}
+
+.tesslo-export-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--t-ui-tertiary);
+    border-top-color: var(--t-motion-primary);
+    border-radius: 50%;
+    animation: tesslo-export-spin 0.8s linear infinite;
+}
+
+@keyframes tesslo-export-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* —— 快照列表 —— */
+.tesslo-snapshot-list {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    max-height: 45vh;
+    overflow-y: auto;
+}
+
+.tesslo-snapshot-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--t-ui-secondary);
+    font-size: var(--t-font-size-md);
+}
+
+.tesslo-snapshot-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+/* —— 提示弹窗（错误/校验统一出口，覆盖在下层弹窗之上） —— */
+.tesslo-alert-overlay {
+    z-index: 10001;
+}
+
+.tesslo-alert-dialog {
+    width: min(24rem, 100%);
+}
+
+/* —— 新建作品：名称 + 存储位置（同一弹窗） —— */
+.tesslo-field-label {
+    display: block;
+    margin: 0.75rem 0 0.25rem;
+    font-size: var(--t-font-size-sm);
+    font-weight: bold;
+    color: var(--t-text-primary);
+}
+
+.tesslo-new-project-field .tesslo-dialog-input {
+    margin-top: 0;
+}
+
+.tesslo-location-options {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.tesslo-location-option {
+    flex: 1 1 10rem;
+    min-height: var(--t-touch-target);
+    padding: 0 0.75rem;
+    border: 1px solid var(--t-ui-tertiary);
+    border-radius: var(--t-radius);
+    background: var(--t-ui-white);
+    color: var(--t-text-primary);
+    font-family: var(--t-font-family);
+    font-size: var(--t-font-size-md);
+    text-align: left;
+    cursor: pointer;
+}
+
+.tesslo-location-option:hover {
+    background: var(--t-ui-secondary);
+}
+
+.tesslo-location-option.is-selected {
+    border-color: var(--t-motion-primary);
+    background: var(--t-ui-primary);
+    color: var(--t-motion-tertiary);
+    font-weight: bold;
+}
+
+.tesslo-location-option:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.tesslo-dir-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.tesslo-dir-picked {
+    flex: 1 1 12rem;
+    min-width: 0;
+    font-size: var(--t-font-size-sm);
+    color: var(--t-text-primary-transparent);
+    word-break: break-all;
+}
+
+.tesslo-dir-hint {
+    margin: 0.5rem 0 0;
+    font-size: var(--t-font-size-sm);
+    color: var(--t-text-primary-transparent);
+}
+
+.tesslo-snapshot-diff {
+    font-size: var(--t-font-size-sm);
+    color: var(--t-text-primary-transparent);
+}
+
+/* 快照行操作按钮（对比 / 回滚） */
+.tesslo-snapshot-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex: 0 0 auto;
+}
+
+/* —— 版本对比弹层 —— */
+.tesslo-compare-dialog {
+    width: min(32rem, 100%);
+}
+
+.tesslo-compare-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 0.5rem 0 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--t-radius);
+    background: var(--t-ui-secondary);
+    font-size: var(--t-font-size-md);
+    font-weight: bold;
+    color: var(--t-text-primary);
+}
+
+.tesslo-compare-lines {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    max-height: 40vh;
+    overflow-y: auto;
+    font-size: var(--t-font-size-md);
+}
+
+.tesslo-compare-lines li {
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--t-ui-secondary);
+    line-height: 1.4;
+}
+
+.tesslo-compare-lines li.is-more {
+    color: #0f9d58;
+}
+
+.tesslo-compare-lines li.is-less {
+    color: #d93025;
+}
+
+.tesslo-compare-lines li.is-info {
+    color: var(--t-text-primary);
+}
+
+/* 窄屏：操作按钮铺满一行 */
+@media (max-width: 640px) {
+    .tesslo-dialog-actions {
+        flex-direction: column-reverse;
+    }
+
+    .tesslo-dialog-actions .tesslo-dialog-button {
+        width: 100%;
+    }
+}

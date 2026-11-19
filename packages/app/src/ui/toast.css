@@ -1,0 +1,48 @@
+/* 成功提示：底部居中的深色胶囊，2.4s 后由组件卸载 */
+@import './tokens.css';
+
+.tesslo-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    z-index: 1200;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: min(28rem, calc(100vw - 2rem));
+    padding: 0.625rem 1rem;
+    border-radius: 999px;
+    background: rgba(40, 46, 63, 0.92);
+    color: var(--t-ui-white);
+    font-family: var(--t-font-family);
+    font-size: var(--t-font-size-md);
+    font-weight: 600;
+    box-shadow: 0 0.5rem 1.5rem rgba(20, 30, 45, 0.28);
+    transform: translateX(-50%);
+    animation: tesslo-toast-in 0.18s ease-out;
+    pointer-events: none;
+}
+
+.tesslo-toast-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 50%;
+    background: #3fbf6b;
+    color: var(--t-ui-white);
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+@keyframes tesslo-toast-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 0.5rem);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}

@@ -9,7 +9,7 @@ Electron；编辑器作为 Web 应用运行在系统 ArkWeb 中，平台能力�
 
 ```text
 packages/scratch-gui / scratch-vm / scratch-render / ...   Scratch 编辑器源码
-apps/tesslo
+apps/host/ohos
   web/                                                     编辑器 Web 入口与打包
   entry/                                                   HAP entry 模块
     src/main/ets/pages/Index.ets                           ArkWeb 页面

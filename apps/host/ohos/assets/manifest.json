@@ -1,0 +1,7 @@
+{
+  "source": "scratch-desktop fetchMediaLibraryAssets (mirror cache)",
+  "committed": true,
+  "files": 1328,
+  "bytes": 56819338,
+  "note": "Assets are committed under apps/host/ohos/assets/fetched and hardlinked into rawfile at build time; no network fetch."
+}

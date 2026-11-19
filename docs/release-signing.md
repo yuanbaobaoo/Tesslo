@@ -63,7 +63,7 @@ AGC 直接下载的 `.cer` 若只含一张证书，`certpath` 直接填它；若
 
 ## 两套签名配置：dev（调试）与 release（上架）
 
-`apps/tesslo/build-profile.json5`（本机文件，不入 git）里并存两组在用的 signingConfig：
+`apps/host/ohos/build-profile.json5`（本机文件，不入 git）里并存两组在用的 signingConfig：
 
 | | `dev` | `release` |
 | --- | --- | --- |
@@ -117,7 +117,7 @@ buildMode 上——`buildModeSet` 只管编译行为（混淆、调试信息）�
      开头校验 release product 已声明（缺失立刻报错并指向本文档，不进长构建）
      → 工具链自检 → 编辑器 → Web → C# Link 全链
      → hvigor -p product=release -p buildMode=release（不改写任何文件）
-     → 产物 apps/tesslo/build/outputs/release/*-signed.app
+     → 产物 apps/host/ohos/build/outputs/release/*-signed.app
 
 ⑤ AGC 网站 → 我的项目 → 版本管理 → 上传软件包（.app）
 ```
@@ -185,7 +185,7 @@ pnpm build:app（node scripts/build-hap.ts --app，全链在脚本内）
 上架前想验证"商店将收到的确切内容"，从 `.app` 解出 HAP 安装（即包内 release HAP）：
 
 ```sh
-cd apps/tesslo/build/outputs/default
+cd apps/host/ohos/build/outputs/default
 unzip -o entry-default-*-signed.app -d app-extract
 hdc install app-extract/entry-default-*-signed.hap
 ```

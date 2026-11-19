@@ -1,5 +1,5 @@
-# 纯 JS 测试（scratch-link 服务端 + 协议一致性），仅 PR 触发。
-# push master 不触发 CI：门禁在本地（pnpm test，见 .agent/release-rule.md）；
+# 纯 JS/TS 测试 + lint 门禁（产品层 + 引擎边界 + scratch-link 协议一致性）。
+# push master 不触发 CI：门禁在本地（pnpm test / pnpm lint，见 .agent/release-rule.md）；
 # tag 发版链路的测试在 ohos-hap.yml 内执行。
 
 name: Test
@@ -9,9 +9,9 @@ on:
 
 jobs:
   test:
-    name: Node tests
+    name: Lint and Node tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -27,5 +27,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run tests
+      - name: Lint (product layer + host scripts + engine D8 boundaries)
+        run: pnpm lint
+
+      - name: Typecheck and test
         run: pnpm test

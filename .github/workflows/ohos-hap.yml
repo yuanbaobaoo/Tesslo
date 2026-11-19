@@ -65,12 +65,12 @@ jobs:
             echo "::error::tag ${GITHUB_REF_NAME} 与 package.json 版本 v${VERSION} 不一致"
             exit 1
           fi
-          APPS_VERSION="$(node -p "require('./apps/tesslo/package.json').version")"
+          APPS_VERSION="$(node -p "require('./apps/host/ohos/package.json').version")"
           if [ "$APPS_VERSION" != "$VERSION" ]; then
-            echo "::error::apps/tesslo/package.json 版本 ${APPS_VERSION} 与根版本 ${VERSION} 不一致"
+            echo "::error::apps/host/ohos/package.json 版本 ${APPS_VERSION} 与根版本 ${VERSION} 不一致"
             exit 1
           fi
-          VERSION_NAME="$(sed -n 's/.*"versionName"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' apps/tesslo/AppScope/app.json5)"
+          VERSION_NAME="$(sed -n 's/.*"versionName"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' apps/host/ohos/AppScope/app.json5)"
           if [ "$VERSION_NAME" != "$VERSION" ]; then
             echo "::error::AppScope/app.json5 versionName ${VERSION_NAME} 与 ${VERSION} 不一致"
             exit 1
@@ -142,11 +142,11 @@ jobs:
           tar --zstd -xf /tmp/runtime-pack.tar.zst -C packages/scratch-link/ohos-net/runtime
           test -f "$TARGET/sdk/System.Private.CoreLib.dll"
 
-      # apps/tesslo/assets/fetched 的 1328 个素材已随仓库提交，构建直接使用，不访问 CDN。
+      # apps/host/ohos/assets/fetched 的 1328 个素材已随仓库提交，构建直接使用，不访问 CDN。
       - name: Verify offline media
         run: |
-          count="$(find apps/tesslo/assets/fetched -type f | wc -l)"
-          bytes="$(find apps/tesslo/assets/fetched -type f -printf '%s\n' | awk '{s+=$1} END{print s}')"
+          count="$(find apps/host/ohos/assets/fetched -type f | wc -l)"
+          bytes="$(find apps/host/ohos/assets/fetched -type f -printf '%s\n' | awk '{s+=$1} END{print s}')"
           echo "offline media: $count files, $bytes bytes"
           test "$count" -eq 1328
           test "$bytes" -eq 56819338
@@ -176,7 +176,7 @@ jobs:
         run: |
           set -e
           mkdir -p dist
-          OUT="apps/tesslo/entry/build/default/outputs/default"
+          OUT="apps/host/ohos/entry/build/default/outputs/default"
           if ! ls "$OUT"/*-unsigned.hap >/dev/null 2>&1; then
             echo "::error::未找到未签名 HAP，实际内容: $(ls "$OUT" 2>/dev/null | tr '\n' ' ')"
             exit 1

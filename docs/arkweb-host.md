@@ -19,7 +19,7 @@ Web({src: $rawfile('index.html'), controller: this.controller})
 `index.html`、`main.js`、GUI 静态资源、离线素材都在
 `entry/src/main/resources/rawfile`。其中 Web bundle 由 `scripts/ohos-common.ts`
 在 HAP 构建时写入，`rawfile` 本身不进入 git；离线素材的源文件在
-`apps/tesslo/assets/fetched`（已入库），构建时以硬链接铺进 rawfile。
+`apps/host/ohos/assets/fetched`（已入库），构建时以硬链接铺进 rawfile。
 
 页面加载完成后执行 WebGL 探测并把结果写入 `tesslo-main.log`，便于真机验证。
 
@@ -43,7 +43,7 @@ Web({src: $rawfile('index.html'), controller: this.controller})
 
 | 入口 | 位置 |
 | --- | --- |
-| 「关于 Tesslo」的 GitHub / Powered by Scratch 链接 | `apps/tesslo/web/src/about-modal.jsx` |
+| 「关于 Tesslo」的 GitHub / Powered by Scratch 链接 | `apps/host/ohos/web/src/about-modal.jsx` |
 | 教程卡片的外部资源链接 | `packages/scratch-gui/src/components/cards/cards.jsx` |
 | 扩展连接弹窗的帮助链接（`window.open`） | `packages/scratch-gui/src/containers/connection-modal.jsx` |
 | micro:bit 固件更新链接 | `packages/scratch-gui/src/components/connection-modal/update-peripheral-step.jsx` |
@@ -64,7 +64,7 @@ Web({src: $rawfile('index.html'), controller: this.controller})
 并随即移除全部监听，之后没有任何机制恢复系统切换造成的挂起或渲染器级静音。
 修复分两层，互相独立、都失败才真的无声：
 
-- 页面层（`apps/tesslo/web/src/index.html` 内联脚本，先于 `main.js` 注册）：
+- 页面层（`apps/host/ohos/web/src/index.html` 内联脚本，先于 `main.js` 注册）：
   包装 `AudioContext` 构造器跟踪所有实例，`statechange` 挂起时尽力 `resume`；
   页面可见、回前台、任意手势时恢复非 `running` 的 context；对外暴露
   `__tessloResumeAudio(force)`，`force=true` 时对 `running` 的做

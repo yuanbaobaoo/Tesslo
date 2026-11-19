@@ -19,7 +19,7 @@
 | `scratch-render-fonts` | 渲染字体 |
 
 内部包版本保持上游值，避免 workspace 链接被 npm 版本覆盖；产品版本只放在根
-`package.json` 和 `apps/tesslo`。
+`package.json` 和 `apps/host/ohos`。
 
 ## 构建顺序
 
@@ -38,7 +38,7 @@ pnpm build:web
 
 ## Web 入口
 
-`apps/tesslo/web` 是一个独立的 Web 构建，不再有 Electron 主进程：
+`apps/host/ohos/web` 是一个独立的 Web 构建，不再有 Electron 主进程：
 
 - `src/index.jsx` 引入 `@scratch/scratch-gui` 的 `GUI` 与 `AppStateHOC`，挂载到
   `index.html` 的 `#app`。
@@ -60,8 +60,8 @@ pnpm build:web
 
 Scratch 默认素材库（角色、造型、背景、声音）在构建时从本地缓存注入：
 
-- `apps/tesslo/assets/fetched/` 保存素材并随仓库提交，
-  `apps/tesslo/assets/manifest.json` 记录来源与数量。
+- `apps/host/ohos/assets/fetched/` 保存素材并随仓库提交，
+  `apps/host/ohos/assets/manifest.json` 记录来源与数量。
 - 构建不需要联网，也不需要额外准备。
 - `pnpm build:hap` 把它硬链接到 `rawfile/static/fetched`（不支持硬链接时回退复制）。
 - ArkTS `AssetServer` 在 `127.0.0.1:20114` 提供这些文件；`WebStorageHelper` 通过
@@ -73,5 +73,5 @@ Scratch 默认素材库（角色、造型、背景、声音）在构建时从本
 ## 平台边界
 
 编辑器源码只保留通用的浏览器行为。窗口、文件选择器、权限、蓝牙和素材服务由
-`apps/tesslo/entry` 提供，不在 GUI/VM 中写 HarmonyOS 判断。这样同步上游编辑器时，
+`apps/host/ohos/entry` 提供，不在 GUI/VM 中写 HarmonyOS 判断。这样同步上游编辑器时，
 冲突集中在 Web 入口和 ArkTS 宿主。

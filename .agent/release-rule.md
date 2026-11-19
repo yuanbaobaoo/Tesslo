@@ -31,9 +31,9 @@ CI 侧使用 `permissions: contents: write` + `softprops/action-gh-release`，
 | 文件 | 字段 | 说明 |
 | --- | --- | --- |
 | `package.json` | `version` | 唯一版本源 |
-| `apps/tesslo/package.json` | `version` | workspace 元数据，跟随根版本 |
-| `apps/tesslo/AppScope/app.json5` | `versionName` | HAP 内部版本，必须等于 `package.json.version`（tag 去掉 `v`） |
-| `apps/tesslo/AppScope/app.json5` | `versionCode` | 正整数，必须严格大于上一版；当前 `0.1.0` = `1000001` |
+| `apps/host/ohos/package.json` | `version` | workspace 元数据，跟随根版本 |
+| `apps/host/ohos/AppScope/app.json5` | `versionName` | HAP 内部版本，必须等于 `package.json.version`（tag 去掉 `v`） |
+| `apps/host/ohos/AppScope/app.json5` | `versionCode` | 正整数，必须严格大于上一版；当前 `0.1.0` = `1000001` |
 
 ## 产物命名（强制）
 
@@ -70,7 +70,7 @@ Tesslo-vX.Y.Z-dev.<GITHUB_RUN_NUMBER>-unsigned.hap
 ## 发版流程（按序执行）
 
 1. **门禁**：`pnpm test` 通过，工作树干净。
-2. **改版本**：同步 `package.json`、`apps/tesslo/package.json`、
+2. **改版本**：同步 `package.json`、`apps/host/ohos/package.json`、
    `AppScope/app.json5` 的 `versionName`，并递增 `versionCode`。
 3. **提交并推送**：
    ```sh
@@ -107,7 +107,7 @@ Tesslo-vX.Y.Z-dev.<GITHUB_RUN_NUMBER>-unsigned.hap
   声明，CI 直接从那里下载，整包 SHA-256 锁定）；`tools` Release 只托管
   ohos-net runtime pack，与 app 版本无关；**不要**把依赖资产塞进
   `v*` app Release。改动 CLT 下载源必须同步 lock 与 CI 的哈希锁定。
-- 离线素材在 `apps/tesslo/assets/fetched`，随仓库提交，不是 Release 资产；
+- 离线素材在 `apps/host/ohos/assets/fetched`，随仓库提交，不是 Release 资产；
   构建不访问 CDN。
 - 本仓库只发 HarmonyOS HAP；macOS/Windows/Linux 官方构建不在 CI 范围内。
 - master push 不触发任何 CI；只有 tag 才构建发版。dev 构建（仅
@@ -144,5 +144,5 @@ Tesslo-vX.Y.Z-dev.<GITHUB_RUN_NUMBER>-unsigned.hap
   `Tesslo-latest-unsigned.hap`；标题用 tag。
 - [x] 新增 `Verify release version`：tag 时校验
   `GITHUB_REF_NAME == v$(node -p "require('./package.json').version")`，
-  并校验 `apps/tesslo/package.json` 与 `AppScope/app.json5` 的 `versionName`。
+  并校验 `apps/host/ohos/package.json` 与 `AppScope/app.json5` 的 `versionName`。
 - [x] README：目前未放置 latest 直链，无需改动。
