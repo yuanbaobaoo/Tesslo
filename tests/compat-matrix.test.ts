@@ -4,14 +4,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {readFileSync} from 'node:fs';
+import {existsSync, readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {dirname, join} from 'node:path';
 import {buildSb3, readTess, sb3ToTess, writeTess} from '../packages/formats/src/index.ts';
 
 const require2 = createRequire(import.meta.url);
-// 官方语义引擎：scratch-vm node dist（引擎包名级引用，测试装配层）
-const VirtualMachine = require2('../packages/engine/scratch/scratch-vm/dist/node/scratch-vm.js');
+// 官方语义引擎：scratch-vm node dist（引擎包名级引用，测试装配层）。
+// dist 是构建产物、不入库：全新检出/CI 必须先 pnpm build:vm，否则这里只会抛
+// 一个含糊的 MODULE_NOT_FOUND，所以在 require 之前显式检查并给出可执行指引。
+const vmDistPath: string = join(
+    dirname(fileURLToPath(import.meta.url)),
+    '../packages/engine/scratch/scratch-vm/dist/node/scratch-vm.js'
+);
+if (!existsSync(vmDistPath)) {
+    throw new Error(
+        `缺少 scratch-vm 的 node 构建产物：${vmDistPath}\n` +
+        '兼容矩阵需要官方语义引擎，请先执行 `pnpm build:vm` 再跑测试（CI 已内建该步骤）。'
+    );
+}
+const VirtualMachine = require2(vmDistPath);
 
 const corpusDir: string = join(dirname(fileURLToPath(import.meta.url)), 'corpus');
 
