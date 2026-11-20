@@ -1,6 +1,6 @@
 {
   "name": "tesslo",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "type": "module",
   "description": "Tesslo - an unofficial, Scratch-compatible block editor for HarmonyOS 7",
@@ -13,6 +13,7 @@
     "env:status": "node scripts/env.ts status",
     "env:install": "node scripts/env.ts install",
     "build:editor": "pnpm build:blocks && pnpm build:storage && pnpm build:svg-renderer && pnpm build:render && pnpm build:vm && pnpm build:audio && pnpm build:l10n && pnpm build:paint && pnpm build:gui",
+    "build:compat-deps": "pnpm build:storage && pnpm build:svg-renderer && pnpm build:render && pnpm build:vm",
     "build:blocks": "pnpm --filter scratch-blocks build",
     "build:storage": "pnpm --filter scratch-storage build",
     "build:svg-renderer": "pnpm --filter @scratch/scratch-svg-renderer exec webpack",
