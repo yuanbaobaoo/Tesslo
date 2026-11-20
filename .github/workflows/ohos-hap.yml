@@ -154,10 +154,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 兼容矩阵测试用官方语义引擎加载产物，需要 scratch-vm 的 node 构建产物；
-      # dist 是生成物不入库，全新检出必须先构建，否则测试会因缺文件直接失败
-      - name: Build scratch-vm for compat regression
-        run: pnpm build:vm
+      # 兼容矩阵测试用官方语义引擎加载产物：scratch-vm 的 node 包把
+      # scratch-storage / scratch-svg-renderer / scratch-render 作为外部依赖，
+      # require 时会去找各自的 dist/node（生成物不入库），所以必须在测试前
+      # 把这四个包构建出来，否则全新检出会因缺文件直接失败。
+      - name: Build compat regression prerequisites
+        run: pnpm build:compat-deps
 
       - name: Run tests
         run: pnpm test

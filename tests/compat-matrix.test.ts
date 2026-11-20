@@ -11,19 +11,29 @@ import {buildSb3, readTess, sb3ToTess, writeTess} from '../packages/formats/src/
 
 const require2 = createRequire(import.meta.url);
 // 官方语义引擎：scratch-vm node dist（引擎包名级引用，测试装配层）。
-// dist 是构建产物、不入库：全新检出/CI 必须先 pnpm build:vm，否则这里只会抛
-// 一个含糊的 MODULE_NOT_FOUND，所以在 require 之前显式检查并给出可执行指引。
-const vmDistPath: string = join(
+// dist 是构建产物、不入库；VM 的 node 包又把 storage / svg-renderer / render
+// 当外部依赖，require 时同样要找它们的 dist/node。全新检出/CI 缺任一个都只会
+// 抛出含糊的 MODULE_NOT_FOUND，所以先显式检查并给出可执行指引。
+const VM_PACKAGES: ReadonlyArray<string> = [
+    'scratch-storage',
+    'scratch-svg-renderer',
+    'scratch-render',
+    'scratch-vm'
+];
+const engineDistDir: string = join(
     dirname(fileURLToPath(import.meta.url)),
-    '../packages/engine/scratch/scratch-vm/dist/node/scratch-vm.js'
+    '../packages/engine/scratch'
 );
-if (!existsSync(vmDistPath)) {
+const missingDists: Array<string> = VM_PACKAGES
+    .map((name: string): string => join(engineDistDir, name, 'dist/node', `${name}.js`))
+    .filter((file: string): boolean => !existsSync(file));
+if (missingDists.length > 0) {
     throw new Error(
-        `缺少 scratch-vm 的 node 构建产物：${vmDistPath}\n` +
-        '兼容矩阵需要官方语义引擎，请先执行 `pnpm build:vm` 再跑测试（CI 已内建该步骤）。'
+        `缺少引擎 node 构建产物（兼容矩阵需要官方语义引擎）：\n${missingDists.join('\n')}\n` +
+        '请先执行 `pnpm build:compat-deps` 再跑测试（CI 已内建该步骤）。'
     );
 }
-const VirtualMachine = require2(vmDistPath);
+const VirtualMachine = require2(join(engineDistDir, 'scratch-vm/dist/node/scratch-vm.js'));
 
 const corpusDir: string = join(dirname(fileURLToPath(import.meta.url)), 'corpus');
 
