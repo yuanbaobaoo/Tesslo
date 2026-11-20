@@ -7,7 +7,7 @@ import {setAppElement} from 'react-modal';
 // 必须先于 gui dist 执行（其 runtime 初始化依赖 currentScript，见 shim 头注）
 import './player-public-path-shim';
 import {Provider} from 'react-redux';
-import Player, {createPlayerStore} from '@scratch/scratch-gui/player';
+import Player, {createPlayerStore, isPlayerRendererSupported} from '@scratch/scratch-gui/player';
 import {ScratchStorage} from 'scratch-storage';
 import {ExportedAssetHelper, PLAYER_DATA_ELEMENT_ID,
     type EmbeddedProjectData} from '@tesslo/app/player';
@@ -32,10 +32,20 @@ const readEmbeddedData = (): EmbeddedProjectData | null => {
     }
 };
 
+// WebGL 不可用时给出明确失败页（否则只挂出舞台控制条，画面空白、看起来像卡死）
+const showUnsupported = (target: HTMLElement): void => {
+    target.className = 'tesslo-player-unsupported';
+    target.textContent = '当前浏览器未启用 WebGL，无法播放作品。\n' +
+        'This browser does not support WebGL, so the project cannot play.\n' +
+        '请改用 Chrome / Edge 等支持 WebGL 的浏览器，或在 Tesslo 内打开作品。';
+};
+
 if (appTarget !== null) {
     setAppElement(appTarget);
     const data: EmbeddedProjectData | null = readEmbeddedData();
-    if (data === null) {
+    if (!isPlayerRendererSupported()) {
+        showUnsupported(appTarget);
+    } else if (data === null) {
         appTarget.textContent = '作品数据缺失或损坏';
     } else {
         // 内嵌数据 storage：Project 与素材全走 ExportedAssetHelper

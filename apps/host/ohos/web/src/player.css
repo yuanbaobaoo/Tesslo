@@ -17,3 +17,17 @@ html, body {
 #app [class*='gui_stage-wrapper'] {
     margin: 0 auto;
 }
+
+/* WebGL 缺失时的失败页：清晰说明原因，不留空白舞台 */
+.tesslo-player-unsupported {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 24px;
+    color: #fff;
+    background: #4d97ff;
+    font: 16px/1.7 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    text-align: center;
+    white-space: pre-line;
+}

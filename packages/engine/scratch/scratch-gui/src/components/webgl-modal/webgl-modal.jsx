@@ -31,6 +31,13 @@ const WebGlModal = props => {
                     <h2>
                         <FormattedMessage {...messages.label} />
                     </h2>
+                    <p className={styles.description}>
+                        <FormattedMessage
+                            defaultMessage="Tesslo needs WebGL to draw the stage. Please use a browser that supports WebGL."
+                            description="Explanation shown when WebGL is unavailable"
+                            id="gui.webglModal.description"
+                        />
+                    </p>
                     <Box className={styles.buttonRow}>
                         <button
                             className={styles.backButton}

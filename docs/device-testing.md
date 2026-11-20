@@ -149,5 +149,10 @@ webgl probe {"webgl":true,"webgl2":true,...}
 ## 模拟器限制
 
 - 模拟器没有 WebGL，ArkWeb 报告 `webgl=false`：界面可用，舞台不渲染。
+  导出 HTML 在模拟器浏览器中同样无法播放（`canvas.getContext('webgl') === null`，
+  应用自身也会提示“你的浏览器不支持WebGL”）；播放端已加 WebGL 预检失败页，
+  ArkWeb 渲染验收仍需真机或带 GPU/WebGL 的模拟器。
+- 模拟器上安装旧 v1.0.0 包时，WebGL 弹窗仍是 Scratch 文案；当前源码已品牌化，
+  需重装当前构建后再验收提示文案。
 - 模拟器没有蓝牙硬件，只能使用 `--ble-sim`。
 - 系统权限与文件选择器需要真人点击。

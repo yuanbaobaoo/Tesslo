@@ -56,7 +56,7 @@ const mapStateToProps = state => ({
 // 只用 locales + scratchGui 两域（AppStateHOC 会把 paint 带进播放端包）。
 import {combineReducers, createStore} from 'redux';
 import localesReducer, {initLocale, localesInitialState} from './reducers/locales';
-import GuiReducer, {buildInitialState, guiMiddleware, initPlayer} from './reducers/gui';
+import GuiReducer, {buildInitialState, guiMiddleware, initFullScreen, initPlayer} from './reducers/gui';
 
 export const createPlayerStore = (config, locale) => {
     let localesState = localesInitialState;
@@ -70,12 +70,24 @@ export const createPlayerStore = (config, locale) => {
         }),
         {
             locales: localesState,
-            scratchGui: initPlayer(buildInitialState(config))
+            // 播放器是整页舞台：切到 fullscreen 模式，舞台按视口缩放
+            // （否则 getStageDimensions 走 480×360 固定档，窄屏会被裁切）
+            scratchGui: initFullScreen(initPlayer(buildInitialState(config)))
         },
         // guiMiddleware 是 store enhancer（与 EditorState 的用法一致），非中间件
         guiMiddleware
     );
     return store;
+};
+
+// 播放端 WebGL 预检：导出 HTML 在无 WebGL 的浏览器里不应只剩空白舞台。
+// 与 Stage 内部共用同一 Renderer 判定，避免两套不一致的探测逻辑。
+export const isPlayerRendererSupported = () => {
+    try {
+        return Renderer.isSupported();
+    } catch {
+        return false;
+    }
 };
 
 const Player = compose(

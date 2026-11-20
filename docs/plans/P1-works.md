@@ -278,6 +278,11 @@ Launcher 与作品库：
       `packages/app/src/ui/tokens.css`（紫 menu-bar/蓝主按钮/Helvetica/
       4px 圆角/蓝色半透明遮罩）；列表页、导航条、三个弹窗全部重写为
       Scratch 观感；响应式断点 640/720/1024，宽/窄视口真机截图验证 ✅
+- [x] **修复：WebGL 弹窗品牌化 + 默认作品大象回归**（2026-11-20）：
+      弹窗标题/描述改为 Tesslo 立场（`Tesslo 需要 WebGL`，无 Scratch 3.0 文案），
+      当前 `web/dist` 在 Chrome `--disable-webgl` 下实测；旧 v1.0.0 安装包仍显示
+      Scratch 文案，需重装当前构建。新增 `tests/product-branding.test.js` 锁死
+      产品默认作品为大象素材（非 Scratch 猫）与 WebGL 文案。
 - [x] `packages/platform-adapter`（接口 v1 + harmony/browser 双实现）✅
       协议 v1 冻结（ADAPTER_PROTOCOL=1）
 - [x] Web 端 `TessloStorage`（GUIConfig.storage：saveProject 组 .tess、
@@ -303,7 +308,18 @@ Launcher 与作品库：
       取用，adapter 接口零改动）+ ExportedAssetHelper + 零网络 ✅
       桌面 Chrome 实测：绿旗启动、角色渲染、performance 资源请求 = 0
 - [x] 全屏自适应 + 绿旗启动页 + title 注入 ✅（favicon/缩略图 P2）
-- [ ] 三端验证：桌面 Chrome ✅ / 手机浏览器 ☐ / HarmonyOS 浏览器 ☐
+- [x] **导出 HTML 第二轮验证 + 两处修复**（2026-11-20）：桌面 Chrome 通过
+      （全屏 885×664、绿旗运行、零网络）；手机视口修复 480px 固定舞台裁切
+      （`createPlayerStore` 初始化 fullscreen，390×664 视口舞台 390×293 不裁切）；
+      无 WebGL 时导出 HTML 显示明确失败页（不再只剩空白舞台）。
+      HarmonyOS 模拟器（MatePad Pro 13 / MateBook Pro，ArkWeb 7.0.0.105）实测
+      `canvas.getContext('webgl') === null`，Tesslo 应用自身也提示不支持 WebGL，
+      故模拟器不能作为播放验收环境；真机 ArkWeb 渲染待补。
+      夹具修正：导出验证改用产品默认大象作品（`default-project`），此前误用
+      `tests/corpus/default.sb3` 的 Scratch 猫，非产品默认；模拟器上的 Scratch
+      WebGL 文案来自旧 v1.0.0 安装包，当前源码弹窗已 Tesslo 品牌化（见 E8）。
+- [ ] 三端验证：桌面 Chrome ✅ / 手机浏览器 ✅（Chrome 390×664 模拟视口；
+      真机待补）/ HarmonyOS 浏览器 ☐（模拟器无 WebGL，应用自身同样不可用）
       （断网验证经"零资源请求"结构性证明）
 - [x] 体积基线入档并优化（2026-11-18）：42.5MB → **12.3MB 模板 / 12.2MB 产物**
       （-71%）。手段：①gui 源码级 player 出口 `index-player.tsx`（只挂

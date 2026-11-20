@@ -15,3 +15,10 @@
 1. 入库文件只读：测试不得写回或依赖绝对路径；
 2. 新增语料随 PR 提交，并在提交说明列覆盖点（积木类别 / 扩展 / 规模）；
 3. 语料与断言分离：断言在 `tests/compat-*.test.ts`，语料仅是数据。
+
+## 与产品默认作品的区别
+
+本目录的 `default.sb3` 是 scratch-vm 上游固定件（Scratch 猫），仅用于格式 /
+行为回归，**不代表产品默认作品**。产品默认作品在
+`packages/engine/scratch/scratch-gui/src/lib/default-project/`（Tesslo 大象），
+导出 HTML 的视觉验收不要用本目录的 `default.sb3` 代替产品默认作品。

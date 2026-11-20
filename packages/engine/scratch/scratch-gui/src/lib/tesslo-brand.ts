@@ -10,7 +10,8 @@ const ZH_OVERRIDES: Record<string, string> = {
     'gui.unsupportedBrowser.label': '当前浏览器不受支持',
     'gui.unsupportedBrowser.notRecommended': '很抱歉，当前浏览器版本不受支持。建议更新到最新版本后重试。',
     'gui.unsupportedBrowser.description': '很抱歉，Tesslo 不支持当前浏览器。建议更新到最新版本的浏览器后重试。',
-    'gui.webglModal.description': '很遗憾，你的浏览器或设备似乎不支持 <a>{webGlLink}</a>。Tesslo 需要该技术来运行。',
+    'gui.webglModal.label': 'Tesslo 需要 WebGL',
+    'gui.webglModal.description': '当前浏览器未启用 WebGL，Tesslo 无法绘制舞台。请换用支持 WebGL 的浏览器，或在支持 WebGL 的设备上打开。',
     'gui.alerts.lostPeripheralConnection': 'Tesslo 与 {extensionName} 的连接已断开。',
     'gui.connection.unavailable.installscratchlink': '请确认硬件连接服务已安装并正在运行',
     'gui.gui.defaultProjectTitle': '未命名作品',
@@ -32,8 +33,9 @@ const EN_OVERRIDES: Record<string, string> = {
         'version that Tesslo does not support. We recommend updating to the latest version.',
     'gui.unsupportedBrowser.description': 'We are very sorry, but Tesslo does not support this browser. ' +
         'We recommend updating to the latest version of a supported browser.',
-    'gui.webglModal.description': 'Unfortunately it looks like your browser or computer <a>{webGlLink}</a>. ' +
-        'This technology is needed for Tesslo to run.',
+    'gui.webglModal.label': 'Tesslo needs WebGL',
+    'gui.webglModal.description': 'WebGL is not available in this browser, so Tesslo cannot draw the stage. ' +
+        'Please use a browser or device that supports WebGL.',
     'gui.alerts.lostPeripheralConnection': 'Tesslo lost connection to {extensionName}.',
     'gui.connection.unavailable.installscratchlink': 'Make sure the hardware connection service is installed and running',
     'gui.gui.defaultProjectTitle': 'Untitled Project',
