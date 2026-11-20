@@ -12,8 +12,8 @@
     --t-ui-white: #ffffff;
     --t-ui-black-transparent: rgba(0, 0, 0, 0.15);
     --t-ui-black-transparent-10: rgba(0, 0, 0, 0.1);
-    --t-ui-modal-overlay: hsla(215, 100%, 65%, 0.9);
-    --t-ui-alert-overlay: hsla(215, 100%, 65%, 0.4);
+    --t-ui-modal-overlay: hsla(0, 0%, 0%, 0.3);
+    --t-ui-alert-overlay: hsla(0, 0%, 0%, 0.35);
 
     /* 主色：菜单栏用 looks-secondary（紫），主按钮用 motion-primary（蓝） */
     --t-looks-secondary: #855cd6;

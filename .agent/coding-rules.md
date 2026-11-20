@@ -223,8 +223,8 @@ JSX/TSX 同理：
   （列表页、工作台导航条、弹窗、tesslo-ui）统一引用
   `packages/app/src/ui/tokens.css` 的设计令牌——紫 menu-bar
   `#855CD6` / 蓝主按钮 `#4C97FF`（hover `#3373CC`）/ 文本 `#575E75` /
-  `Helvetica Neue` 字族 / `0.25rem` 圆角 / 蓝色半透明弹窗遮罩
-  `hsla(215,100%,65%,.9)`；禁止散写颜色与字号。产品层只复用 Scratch
+  `Helvetica Neue` 字族 / `0.25rem` 圆角 / 中性低透明度弹窗遮罩
+  `hsla(0,0%,0%,.3)`（`--t-ui-modal-overlay`，不再用品牌蓝铺满）；禁止散写颜色与字号。产品层只复用 Scratch
   工作区（积木/舞台/画板/角色面板），chrome 一律自绘且保持 Scratch 观感。
 - **响应式（强制）**：自研 UI 必须通过 `clamp()/min()/max()` 与断点适配——
   窄屏 < 640px 单列/压缩、中屏 640–1024px 自适应网格、宽屏完整布局；

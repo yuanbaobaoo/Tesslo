@@ -1,5 +1,5 @@
 /* Tesslo 弹窗（PromptDialog / ExportDialog / SnapshotsDialog 共用）：
-   对齐 Scratch modal 风格——蓝色半透明遮罩 + 白色内容 + 4px 白描边 + 0.5rem 圆角。 */
+   对齐 Scratch modal 风格——中性低透明度遮罩 + 白色内容 + 4px 白描边 + 0.5rem 圆角。 */
 @import './tokens.css';
 
 .tesslo-dialog-overlay {
