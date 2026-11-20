@@ -9,7 +9,18 @@ import {selectAdapter} from '@tesslo/platform-adapter';
 import {AboutModal, AlertDialog, presentError, TessloShell} from '@tesslo/app';
 import type {ProjectSummary} from '@tesslo/platform-adapter';
 import {exportProject} from './exporter';
+import {ASSET_ORIGIN} from './constants';
 import tessloLogo from './assets/tesslo-logo.png';
+
+declare global {
+    interface Window {
+        // 设备内素材服务 origin：引擎的库缩略图经 legacy config 读取（见 lib/legacy-storage.ts）
+        __TESSLO_ASSET_ORIGIN__?: string;
+    }
+}
+
+// 把设备内素材服务地址交给引擎：引擎侧不硬编码宿主地址，只消费这个注入值
+window.__TESSLO_ASSET_ORIGIN__ = ASSET_ORIGIN;
 
 // webpack 打包单页的挂载点；引擎弹窗也锚定于此
 const appTarget = document.getElementById('app');

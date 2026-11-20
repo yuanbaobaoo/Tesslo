@@ -5,6 +5,19 @@ import {GUIStorage, TranslatorFunction} from '../gui-config';
 
 import saveProjectToServer from '../lib/save-project-to-server';
 
+/**
+ * 设备内素材服务 origin：由装配层注入 window.__TESSLO_ASSET_ORIGIN__
+ * （见 apps/host/ohos/web/src/index.tsx），引擎不硬编码宿主地址。
+ * 求值放在 web store 的 URL 函数里，注入晚于模块加载也能生效。
+ *
+ * @returns 去掉结尾斜杠的 origin；未注入时为空串（保持相对路径语义）。
+ */
+const localAssetOrigin = (): string => {
+    const holder = globalThis as typeof globalThis & {__TESSLO_ASSET_ORIGIN__?: string};
+    const origin = holder.__TESSLO_ASSET_ORIGIN__;
+    return typeof origin === 'string' ? origin.replace(/\/+$/, '') : '';
+};
+
 export class LegacyStorage implements GUIStorage {
     private projectHost?: string;
     private translator?: TranslatorFunction;
@@ -77,6 +90,13 @@ export class LegacyStorage implements GUIStorage {
         storage.addWebStore(
             [storage.AssetType.Sound],
             asset => `static/extension-assets/scratch3_music/${asset.assetId}.${asset.dataFormat}`
+        );
+        // 库缩略图（角色/造型/背景）经 ScratchImage → 本实例 load() 取图：
+        // 这些素材不在工程目录里，由设备内 AssetServer 以 /static/fetched/ 提供。
+        // 必须走 http origin——resource:// 下 fetch/XHR 不可用，<img> 才勉强可读。
+        storage.addWebStore(
+            [storage.AssetType.ImageVector, storage.AssetType.ImageBitmap],
+            asset => `${localAssetOrigin()}/static/fetched/${asset.assetId}.${asset.dataFormat}`
         );
     }
 }
